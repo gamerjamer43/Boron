@@ -1,0 +1,7 @@
+pkgmanager/
+concepts/
+tests/
+tdl.txt
+setup.py
+*.pyc
+packages.db
