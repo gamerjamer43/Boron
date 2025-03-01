@@ -321,23 +321,20 @@ class Interpreter:
         previous_scope = self.global_scope.copy()
         combined_scope = {**self.global_scope, **local_scope}
         self.global_scope = combined_scope
-        result = None
 
-        for statement in function.body:
-            result = self.evaluate(statement)
-            # If a return statement is encountered, return its value
-            if isinstance(statement, ReturnStatement):
-                result = self.evaluate(statement.values[0])
-                break
-        
-        # Restore the previous scope
+        result = None
+        try:
+            for statement in function.body:
+                self.evaluate(statement)
+        except ReturnException as ret:
+            result = ret.value
+
         self.global_scope = previous_scope
         return result
 
     def evaluate_return_statement(self, node):
-        if node.values:
-            return self.evaluate(node.values[0])
-        return None
+        value = self.evaluate(node.values[0]) if node.values else None
+        raise ReturnException(value)
 
     def evaluate_identifier(self, node):
         if node.name not in self.global_scope:

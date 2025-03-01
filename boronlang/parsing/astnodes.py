@@ -220,13 +220,18 @@ class IndexAssignment:
     def __repr__(self):
         return f"IndexAssignment({repr(self.container)}, {repr(self.index)}, {repr(self.value)})"
 
-# return node
+# return nodes
 class ReturnStatement(ASTNode):
     def __init__(self, values):
         self.values = values
     
     def __repr__(self):
         return f'ReturnStatement({self.values})'
+    
+# return exception for catching returns (break cases)
+class ReturnException(Exception):
+    def __init__(self, value):
+        self.value = value
 
 # eof
 class EndOfFile(ASTNode):
