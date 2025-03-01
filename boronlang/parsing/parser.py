@@ -9,7 +9,7 @@ from parsing.astnodes import BinaryOperation, LogicalOperation, UnaryOperation
 # control flow nodes
 from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop
 # variable nodes
-from parsing.astnodes import Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral
+from parsing.astnodes import Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, IndexAccess, IndexAssignment
 # scope
 from parsing.scope import Scope
 
@@ -62,6 +62,8 @@ class Parser:
             return self.parse_array_declaration()
         elif token.type == TokenType.CLASS:
             return self.parse_class_declaration()
+        if token.type == TokenType.GLOBAL:
+            return self.parse_global_declaration()
         elif token.type == TokenType.IDENTIFIER:
             return self.parse_identifier()
         elif token.type == TokenType.FUNCTION:
@@ -175,6 +177,21 @@ class Parser:
                 print(repr(BinaryOperation(Identifier(name), operator, new_value)))
                 return BinaryOperation(Identifier(name), operator, new_value)
             
+            # array/list/vector accesses
+            elif next_token.type == TokenType.LEFT_BRACKET:
+                self.next_token()
+                self.next_token()
+                index_expr = self.parse_expression()
+                self.expect(TokenType.RIGHT_BRACKET)
+
+                # also check for assignments
+                if self.current_token().type == TokenType.ASSIGN:
+                    self.next_token()
+                    assignment_value = self.parse_expression()
+                    return IndexAssignment(Identifier(name), index_expr, assignment_value)
+
+                return IndexAccess(Identifier(name), index_expr)
+            
             elif next_token.type in [TokenType.INCREMENT, TokenType.DECREMENT]:
                 self.next_token()
                 operator = next_token.type
@@ -202,11 +219,6 @@ class Parser:
                 method = self.current_token().value
                 self.next_token()
                 self.expect(TokenType.LEFT_PAREN)
-
-                # while self.current_token().type != TokenType.RIGHT_PAREN
-                # parse through each argument provided, seperated by a comma
-                # put that under parameters as a list
-                # later in the interpreter if the method does not come with that many arguments we throw an error
 
                 arguments = []
                 while self.current_token().type != TokenType.RIGHT_PAREN:
@@ -343,7 +355,17 @@ class Parser:
             TokenType.CLASS, name, 
             ClassLiteral([], children, fields, methods, body)
         )
+    
+    # actually implement scope on this later, for right now just do this
+    def parse_global_declaration(self):
+        self.expect(TokenType.GLOBAL)
 
+        if self.current_token().type in [TokenType.INTEGER, TokenType.BOOLEAN, TokenType.STR,
+                                        TokenType.TUPLE, TokenType.LIST, TokenType.VECTOR, TokenType.SET, TokenType.DEC]:
+            var_decl = self.parse_variable_declaration()
+            return var_decl
+        else:
+            raise SyntaxError("Expected a type declaration after the 'global' keyword.")
 
     def parse_expression(self):
         """

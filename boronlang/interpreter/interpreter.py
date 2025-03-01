@@ -1,4 +1,4 @@
-# imports from my classes
+# tokentype from my lexer and all ASTNodes from parser
 from lexer.lexer import TokenType
 from parsing.astnodes import *
 
@@ -6,6 +6,7 @@ from parsing.astnodes import *
 from decimal import Decimal
 # importlib and os for package support
 import importlib.util, os
+from rich import print  # colored prints
 
 class Interpreter:
     def __init__(self):
@@ -58,6 +59,10 @@ class Interpreter:
             return range(self.evaluate(node.start), self.evaluate(node.stop), self.evaluate(node.increment))
         elif isinstance(node, MethodCall):
             return self.evaluate_method_call(node)
+        elif isinstance(node, IndexAccess):
+            return self.evaluate_index_access(node)
+        elif isinstance(node, IndexAssignment):
+            return self.evaluate_index_assignment(node)
         elif isinstance(node, EndOfFile):
             return None
         # if no instance, raise not implemented error because it hasn't been implemented
@@ -67,7 +72,10 @@ class Interpreter:
     # wrapper to push the entire program through evaluation
     def evaluate_program(self, program):
         for statement in program.statements:
-            self.evaluate(statement)
+            try:
+                self.evaluate(statement)
+            except KeyboardInterrupt:
+                print("[red]KeyboardInterrupt[/red]")
 
     # loading for packages, packages are just .py files for right now, full python libraries soon
     def evaluate_import(self, node):
@@ -115,6 +123,7 @@ class Interpreter:
                 value = None
 
         # finally enforce type
+        print(f"Enforcing type for {node.var_type}, {node.name}: {value}")
         value = self.enforce_type(node.var_type, value)
         
         # and add to global scope (this is just for logging purposes)
@@ -128,6 +137,7 @@ class Interpreter:
 
     # enforces type against the following for right now: integer, decimal, boolean, string, array (WIP)
     def enforce_type(self, expected_type, value):
+        # make sure integers are whole numbers
         if expected_type == TokenType.INTEGER:
             # if value is a decimal, ensure it's whole.
             if isinstance(value, Decimal):
@@ -138,23 +148,25 @@ class Interpreter:
                 return value
             raise ValueError(f"Expected integer, got {type(value)} with value {value}.")
         
+        # make sure decimals are float values (FUCK FLOAT WE LOVE PRECISION)
         elif expected_type == TokenType.DECIMAL:
             # allow both int and Decimal; store as Decimal.
             if isinstance(value, (Decimal, int)):
                 return Decimal(value)
             raise ValueError(f"Expected decimal, got {type(value)} with value {value}.")
         
+        # make sure bool is true or false
         elif expected_type == TokenType.BOOLEAN:
             if isinstance(value, bool):
                 return value
             raise ValueError(f"Expected boolean, got {type(value)} with value {value}.")
         
+        # make sure a string is a string literal
         elif expected_type == TokenType.STR:
             if isinstance(value, str):
                 return value
             raise ValueError(f"Expected string, got {type(value)} with value {value}.")
         
-        # add similar checks for arrays if needed here.
         return value
 
     def evaluate_binary_operation(self, node):
@@ -340,6 +352,7 @@ class Interpreter:
             raise ValueError(f"Array size mismatch: expected {node.size}, got {len(elements)}")
         
         # afterwards, enforce type
+        print(f"Enforcing type for array: {elements}")
         for element in elements:
             self.enforce_type(node.type, element)
 
@@ -365,3 +378,25 @@ class Interpreter:
 
         args = [self.evaluate(arg) for arg in node.parameters]
         return method_func(*args)
+    
+    def evaluate_index_access(self, node):
+        container = self.evaluate(node.container)
+        index = self.evaluate(node.index)
+        if not isinstance(container, list):
+            raise TypeError("Index access is only supported on lists or arrays.")
+        try:
+            return container[index]
+        except IndexError:
+            raise IndexError("Index out of range.")
+
+    def evaluate_index_assignment(self, node):
+        container = self.evaluate(node.container)
+        index = self.evaluate(node.index)
+        value = self.evaluate(node.value)
+        if not isinstance(container, list):
+            raise TypeError("Index access is only supported on lists or arrays.")
+        try:
+            container[index] = value
+            return value
+        except IndexError:
+            raise IndexError("Index out of range.")

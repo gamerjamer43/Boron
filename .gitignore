@@ -5,3 +5,6 @@ tdl.txt
 setup.py
 *.pyc
 packages.db
+.env
+GroqWrapper.py
+ai.b

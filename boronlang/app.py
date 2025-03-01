@@ -16,3 +16,7 @@ if file:
     assemble(file)
 else:
     print("No file selected.")
+
+
+lis = [1, 2, 3]
+lis[1] = 4

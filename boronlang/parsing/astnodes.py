@@ -203,6 +203,23 @@ class ClassLiteral(ASTNode):
     def __repr__(self):
         return f'ClassLiteral({self.parent}, {self.sub}, {self.fields}, {self.methods}, {self.body}'
 
+class IndexAccess:
+    def __init__(self, container, index):
+        self.container = container
+        self.index = index
+
+    def __repr__(self):
+        return f"IndexAccess({repr(self.container)}, {repr(self.index)})"
+    
+class IndexAssignment:
+    def __init__(self, container, index, value):
+        self.container = container
+        self.index = index
+        self.value = value
+
+    def __repr__(self):
+        return f"IndexAssignment({repr(self.container)}, {repr(self.index)}, {repr(self.value)})"
+
 # return node
 class ReturnStatement(ASTNode):
     def __init__(self, values):

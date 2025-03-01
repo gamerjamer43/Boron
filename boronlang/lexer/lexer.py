@@ -51,6 +51,7 @@ class TokenType(Enum):
     
     # keywords
     FUNCTION = "fn"
+    GLOBAL = "global"
     RETURN = "$$"
     IF = "if"
     ELSE_IF = "else if"
@@ -125,6 +126,7 @@ class Lexer:
 
             # keywords
             (TokenType.FUNCTION, r'\bfn\b'),
+            (TokenType.GLOBAL, r'\bglobal\b'),
             (TokenType.RETURN, r'\$\$'),
             (TokenType.IF, r'\bif\b'),
             (TokenType.ELSE_IF, r'\belse if\b'),
