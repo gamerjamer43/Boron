@@ -1,4 +1,3 @@
-#import Convert
 #import Random
 
 fn quicksort(list arr) $$ list {
@@ -27,4 +26,4 @@ fn quicksort(list arr) $$ list {
 
 list sample_list = Random.fill(20, 100)
 list sorted_list = quicksort(sample_list)
-out("Sorted array: " + Convert.toStr(sorted_list))
+out("Sorted array: " + toStr(sorted_list))

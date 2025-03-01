@@ -1,10 +1,8 @@
-#import Convert
-
 #! get input as a number
 int numinput
 
 while true {
-    numinput = Convert.toInt(inp("> "))
+    numinput = toInt(inp("> "))
 
     if numinput % 5 == 0 and numinput % 3 == 0 {
         out("FizzBuzz")

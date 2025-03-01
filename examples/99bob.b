@@ -1,8 +1,6 @@
-#import Convert
-
 for (int i = 99; i > 2; i--) {
-    out(Convert.toStr(i) + " bottles of beer on the wall, " + Convert.toStr(i) + " bottles of beer!")
-    out("Take one down, pass it around, " + Convert.toStr(i-1) + " bottles of beer on the wall!")
+    out(toStr(i) + " bottles of beer on the wall, " + toStr(i) + " bottles of beer!")
+    out("Take one down, pass it around, " + toStr(i-1) + " bottles of beer on the wall!")
 }
 
 out("1 bottle of beer on the wall, 1 bottle of beer!")
