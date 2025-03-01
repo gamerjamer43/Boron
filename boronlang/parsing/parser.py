@@ -82,6 +82,25 @@ class Parser:
             return EndOfFile()
         else:
             raise SyntaxError(f"Unexpected token {token.type}")
+    
+    # wip, hopefully this should parse blocks correctly
+    def parse_block(self):
+        self.expect(TokenType.LEFT_BRACE)
+        statements = []
+        # skip any initial EOLs.
+        while self.current_token().type == TokenType.EOL:
+            self.next_token()
+        # parse until right brace.
+        while self.current_token().type != TokenType.RIGHT_BRACE:
+            # skip extra EOL between statements.
+            while self.current_token().type == TokenType.EOL:
+                self.next_token()
+            if self.current_token().type == TokenType.RIGHT_BRACE:
+                break
+            statements.append(self.parse_statement())
+        self.expect(TokenType.RIGHT_BRACE)
+        return statements
+
         
     def parse_variable_declaration(self):
         type_token = self.expect(self.current_token().type)
@@ -285,29 +304,19 @@ class Parser:
         parameters = []
         while self.current_token().type != TokenType.RIGHT_PAREN:
             param_token = self.expect(self.current_token().type)
-
             if not isinstance(param_token.value, Token) or param_token.value.type != TokenType.IDENTIFIER:
                 raise SyntaxError(f"Expected parameter with type and identifier, but found {param_token.value}")
-
             param_type = param_token.type
             param_name = param_token.value.value
-            print(repr(Parameter(param_type, param_name)))
             parameters.append(Parameter(param_type, param_name))
-
             if self.current_token().type == TokenType.COMMA:
                 self.next_token()
-
         self.expect(TokenType.RIGHT_PAREN)
         return_type = self.expect(TokenType.RETURN).value
 
-        self.expect(TokenType.LEFT_BRACE)
-        body = []
-        while self.current_token().type != TokenType.RIGHT_BRACE:
-            body.append(self.parse_statement())
-        
-        self.expect(TokenType.RIGHT_BRACE)
-        print(repr(Function(name, parameters, return_type, body)))
+        body = self.parse_block()  # use the block parser
         return Function(name, parameters, return_type, body)
+
     
     def parse_class_declaration(self):
         name = self.current_token().value
@@ -396,7 +405,7 @@ class Parser:
                 operator = token.type
                 self.next_token()
                 operand = parse_primary()
-                return UnaryOperation(operator, operand)
+                return UnaryOperation(operand, operator)
             elif token.type == TokenType.LEFT_PAREN:
                 self.next_token()
                 expr = self.parse_expression()
@@ -467,23 +476,7 @@ class Parser:
     def parse_if_statement(self):
         self.expect(TokenType.IF)
         condition = self.parse_expression()
-
-        self.expect(TokenType.LEFT_BRACE)
-        self.scope.enter_scope()
-
-        if_body = []
-        while self.current_token().type != TokenType.RIGHT_BRACE:
-            while self.current_token().type == TokenType.EOL:
-                self.next_token()
-            if self.current_token().type == TokenType.RIGHT_BRACE:
-                break
-            if self.current_token().type == TokenType.EOF:
-                raise SyntaxError("Unexpected end of file inside if block")
-
-            if_body.append(self.parse_statement())
-        
-        self.scope.exit_scope()
-        self.expect(TokenType.RIGHT_BRACE)
+        if_body = self.parse_block()  # reuse parse_block for the if body
 
         else_body = None
         last_else_if = None
@@ -491,23 +484,7 @@ class Parser:
         while self.current_token().type == TokenType.ELSE_IF:
             self.next_token()
             else_if_condition = self.parse_expression()
-
-            self.expect(TokenType.LEFT_BRACE)
-            self.scope.enter_scope()
-
-            else_if_body = []
-            while self.current_token().type != TokenType.RIGHT_BRACE:
-                while self.current_token().type == TokenType.EOL:
-                    self.next_token()
-                if self.current_token().type == TokenType.RIGHT_BRACE:
-                    break
-                if self.current_token().type == TokenType.EOF:
-                    raise SyntaxError("Unexpected end of file inside else-if block")
-                else_if_body.append(self.parse_statement())
-
-            self.scope.exit_scope()
-            self.expect(TokenType.RIGHT_BRACE)
-
+            else_if_body = self.parse_block()
             else_if_statement = IfStatement(else_if_condition, else_if_body, None)
             if last_else_if:
                 last_else_if.else_body = else_if_statement
@@ -517,28 +494,14 @@ class Parser:
 
         if self.current_token().type == TokenType.ELSE:
             self.next_token()
-            self.expect(TokenType.LEFT_BRACE)
-
-            self.scope.enter_scope()
-            final_else_body = []
-            while self.current_token().type != TokenType.RIGHT_BRACE:
-                while self.current_token().type == TokenType.EOL:
-                    self.next_token()
-                if self.current_token().type == TokenType.RIGHT_BRACE:
-                    break
-                if self.current_token().type == TokenType.EOF:
-                    raise SyntaxError("Unexpected end of file inside else block")
-                final_else_body.append(self.parse_statement())
-
-            self.scope.exit_scope()
-            self.expect(TokenType.RIGHT_BRACE)
-
+            final_else_body = self.parse_block()
             if last_else_if:
                 last_else_if.else_body = final_else_body
             else:
                 else_body = final_else_body
 
         return IfStatement(condition, if_body, else_body)
+
 
 
     def parse_for_loop(self):

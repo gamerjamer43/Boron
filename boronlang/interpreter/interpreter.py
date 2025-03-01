@@ -319,7 +319,8 @@ class Interpreter:
             local_scope[param.name] = arg
 
         previous_scope = self.global_scope.copy()
-        self.global_scope = local_scope
+        combined_scope = {**self.global_scope, **local_scope}
+        self.global_scope = combined_scope
         result = None
 
         for statement in function.body:

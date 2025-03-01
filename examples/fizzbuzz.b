@@ -1,6 +1,5 @@
 #import Console
 #import Convert
-#import Math
 
 #! get input as a number
 int numinput
