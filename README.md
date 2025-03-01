@@ -114,13 +114,13 @@ Boron supports standard arithmetic, comparison, logical, and compound assignment
 
 - **Arithmetic Operators:**  
   ```
-  2 + 3       # Addition
-  5 - 2       # Subtraction
-  3 * 4       # Multiplication
-  10 / 2      # Division
-  2 ** 3      # Exponentiation (power)
-  10 // 3     # Floor division
-  10 % 3      # Modulus
+  2 + 3       #! Addition
+  5 - 2       #! Subtraction
+  3 * 4       #! Multiplication
+  10 / 2      #! Division
+  2 ** 3      #! Exponentiation (power)
+  10 // 3     #! Floor division
+  10 % 3      #! Modulus
   ```
 
 - **Comparison Operators:**  
@@ -193,17 +193,17 @@ do {
 ```
 fn myFunction(int arg1, int arg2) -> bool {
     if arg1 == arg2 {
-        -> true   # Returns true if the arguments are equal
+        -> true   #! Returns true if the arguments are equal
     }
-    -> false      # Otherwise returns false
+    -> false      #! Otherwise returns false
 }
 ```
 
 Function calls look like this:
   
 ```
-out(myFunction(1, 1))  # Expected to output true
-out(myFunction(1, 2))  # Expected to output false
+out(myFunction(1, 1))  #! Expected to output true
+out(myFunction(1, 2))  #! Expected to output false
 ```
 
 ---
@@ -249,8 +249,8 @@ fn myFunction(int arg1, int arg2) -> bool {
     -> false
 }
 
-out(myFunction(1, 1))  # Should print true
-out(myFunction(1, 2))  # Should print false
+out(myFunction(1, 1))  #! Should print true
+out(myFunction(1, 2))  #! Should print false
 
 #! for loop example
 for (int i = 0; i < 5; i++) {
