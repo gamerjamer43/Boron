@@ -8,11 +8,15 @@ from decimal import Decimal
 import importlib.util, os
 from rich import print  # colored prints
 
+# builtin functions?
+from interpreter.builtins import BUILTINS
+
 class Interpreter:
     def __init__(self):
         # initialize a global scope and the package folder (locally for right now)
         self.global_scope = {}
         self.package_folder = "C:\\Users\\fuzio\\Downloads\\programs\\showcase\\Boron\\packages"
+        self.global_scope.update(BUILTINS)
 
     # the main evaluation function for the program. every node will go through this
     def evaluate(self, node):
@@ -211,6 +215,10 @@ class Interpreter:
             return left > right
         elif node.operator == TokenType.LESS_THAN:
             return left < right
+        elif node.operator == TokenType.GREATER_EQUAL:
+            return left >= right
+        elif node.operator == TokenType.LESS_EQUAL:
+            return left <= right
         elif node.operator == TokenType.EQUAL:
             return left == right
         elif node.operator == TokenType.NOT_EQUAL:
@@ -313,6 +321,9 @@ class Interpreter:
         
         function = self.global_scope[func_name]
         arguments = [self.evaluate(arg) for arg in node.parameters]
+
+        if not hasattr(function, "parameters"):
+            return function(*arguments)
 
         local_scope = {}
         for param, arg in zip(function.parameters, arguments):

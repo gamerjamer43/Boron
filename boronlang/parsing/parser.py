@@ -429,7 +429,7 @@ class Parser:
                     current_precedence = 20
                 elif operator == TokenType.POWER:
                     current_precedence = 30
-                elif operator in [TokenType.EQUAL, TokenType.NOT_EQUAL, TokenType.GREATER_THAN, TokenType.LESS_THAN]:
+                elif operator in [TokenType.EQUAL, TokenType.NOT_EQUAL, TokenType.GREATER_THAN, TokenType.LESS_THAN, TokenType.GREATER_EQUAL, TokenType.LESS_EQUAL]:
                     current_precedence = 5
                 elif operator == TokenType.AND:
                     current_precedence = 3
@@ -453,7 +453,7 @@ class Parser:
                         next_precedence = 20
                     elif next_operator == TokenType.POWER:
                         next_precedence = 30
-                    elif next_operator in [TokenType.EQUAL, TokenType.NOT_EQUAL, TokenType.GREATER_THAN, TokenType.LESS_THAN]:
+                    elif next_operator in [TokenType.EQUAL, TokenType.NOT_EQUAL, TokenType.GREATER_THAN, TokenType.LESS_THAN, TokenType.LESS_THAN, TokenType.GREATER_EQUAL, TokenType.LESS_EQUAL]:
                         next_precedence = 5
                     elif next_operator == TokenType.AND:
                         next_precedence = 3
@@ -532,6 +532,7 @@ class Parser:
         self.expect(TokenType.WHILE)
         condition = self.parse_expression()
         self.expect(TokenType.LEFT_BRACE)
+
         body = []
         while self.current_token().type != TokenType.RIGHT_BRACE:
             body.append(self.parse_statement())

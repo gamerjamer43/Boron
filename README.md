@@ -1,7 +1,8 @@
 # BoronLang
 
 BoronLang is a statically typed, precision-first programming language designed for expressive control flow, rich data types, and seamless package integration. This README details every aspect of the language—from basic syntax to advanced features—so you can quickly get started writing robust programs.
-This is written by ChatGPT and I'll go through and fix it when I'm done :)
+
+The goal of this language is to be a simple introduction to programming that slightly abstracts, but also expands on python to make it a mix of Java, Python, and C++ to give beginners an introduction to Object Oriented Programming
 ---
 
 ## Table of Contents
@@ -14,9 +15,7 @@ This is written by ChatGPT and I'll go through and fix it when I'm done :)
    - [Expressions and Operators](#expressions-and-operators)
    - [Control Structures](#control-structures)
    - [Functions and Returns](#functions-and-returns)
-   - [Arrays, Lists, and Ranges](#arrays-lists-and-ranges)
    - [Packages and Imports](#packages-and-imports)
-   - [Scope and Variable Visibility](#scope-and-variable-visibility)
 3. [Example Program](#example-program)
 4. [Future Enhancements](#future-enhancements)
 
@@ -210,6 +209,20 @@ Console.out(myFunction(1, 2))  # Expected to output false
 
 ---
 
+### Packages and Imports
+
+```
+#import Console
+```
+
+Imports are also really simple, just #import said package, and you can use it's methods
+  
+```
+Console.out("Hello world!")
+```
+
+---
+
 ## Example Program
 
 ```
@@ -265,8 +278,9 @@ do {
 ## Future Enhancements
 
 - **Additional Data Types:** Support for vectors (`vec`), tuples, and sets is planned.
+- **Object Orientation:** Yeah, I don't know how I don't have this added, classes however are broken.
 - **Enhanced Scoping:** Better support for closures and nested functions.
-- **Package System Improvements:** Allow external package imports.
 - **Improved Error Handling:** More descriptive syntax and type error messages.
+- **Other shit:** I have no clue what else to add here. A lot more to come.
 
-Enjoy coding in BoronLang!
+Enjoy writing Boron, a simple yet complex enough introduction to programming!

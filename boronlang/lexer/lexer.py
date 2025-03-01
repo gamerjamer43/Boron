@@ -28,6 +28,10 @@ class TokenType(Enum):
     EQUAL = "=="
     NOT_EQUAL = "!="
     NOT = "!"
+    GREATER_EQUAL = ">="
+    LESS_EQUAL = "<="
+    GREATER_THAN = ">"
+    LESS_THAN = "<"
     ASSIGN = "="
     INCREASE = "+="
     ADD = "+"
@@ -44,10 +48,6 @@ class TokenType(Enum):
     FLOOREQ = "//="
     FLOOR_DIVIDE = "//"
     MODULUS = "%"
-    GREATER_THAN = ">"
-    LESS_THAN = "<"
-    GREATER_EQUAL = ">="
-    LESS_EQUAL = "<="
     
     # keywords
     FUNCTION = "fn"
@@ -143,6 +143,10 @@ class Lexer:
             (TokenType.EQUAL, r'=='),
             (TokenType.NOT_EQUAL, r'!='),
             (TokenType.NOT, r'!'),
+            (TokenType.GREATER_EQUAL, r'>='),
+            (TokenType.LESS_EQUAL, r'<='),
+            (TokenType.GREATER_THAN, r'>'),
+            (TokenType.LESS_THAN, r'<'),
             (TokenType.ASSIGN, r'='),
             (TokenType.INCREASE, r'\+='),
             (TokenType.INCREMENT, r'\+\+'),
@@ -159,10 +163,6 @@ class Lexer:
             (TokenType.FLOOR_DIVIDE, r'//'),
             (TokenType.DIVIDE, r'/'),
             (TokenType.MODULUS, r'%'),
-            (TokenType.GREATER_THAN, r'>'),
-            (TokenType.LESS_THAN, r'<'),
-            (TokenType.GREATER_EQUAL, r'>='),
-            (TokenType.LESS_EQUAL, r'<='),
 
             # comments, identifers, literals
             (TokenType.COMMENT, r'#!.*|##!.*?##!'),
