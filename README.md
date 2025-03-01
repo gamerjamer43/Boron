@@ -25,10 +25,7 @@ The goal of this language is to be a simple introduction to programming that sli
 1. **Download/Clone the Repository:**  
    Clone the Boron repository from GitHub or download the source.
 
-2. **Build/Assemble the Language:**  
-   Follow the provided build instructions (e.g., using a provided Makefile or build script) to compile the language tools (lexer, parser, interpreter).
-
-3. **Run a Program:**  
+2. **Run a Program:**  
    Execute your Boron source file (e.g., `program.b`) using the interpreter:
    
    ```
@@ -36,6 +33,8 @@ The goal of this language is to be a simple introduction to programming that sli
    ```
 
    (Adjust the command according to your project setup.)
+
+That simple! Literally grab, and go!
 
 ---
 
