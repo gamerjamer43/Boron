@@ -18,7 +18,21 @@ class TokenType(Enum):
     VECTOR = "vec"
     SET = "set"
     CLASS = "class"
+    DICT = "dict"
     NONE = "none"
+
+    # keywords
+    FUNCTION = "fn"
+    GLOBAL = "global"
+    RETURN = "->"
+    IF = "if"
+    ELSE_IF = "else if"
+    ELSE = "else"
+    WHILE = "while"
+    DO = "do"
+    FOR = "for"
+    IMPORT = "#import"
+    IN = "in"
     
     # operators
     TRUE = "true"
@@ -48,19 +62,6 @@ class TokenType(Enum):
     FLOOREQ = "//="
     FLOOR_DIVIDE = "//"
     MODULUS = "%"
-    
-    # keywords
-    FUNCTION = "fn"
-    GLOBAL = "global"
-    RETURN = "$$"
-    IF = "if"
-    ELSE_IF = "else if"
-    ELSE = "else"
-    WHILE = "while"
-    DO = "do"
-    FOR = "for"
-    IMPORT = "#import"
-    IN = "in"
     
     # braces and punctuation marks
     LEFT_BRACKET = "["
@@ -120,6 +121,7 @@ class Lexer:
             (TokenType.VECTOR, r'\bvec\b'),
             (TokenType.SET, r'\bset\b'),
             (TokenType.CLASS, r'\bclass\b'),
+            (TokenType.DICT, r'\bdict\b'),
             (TokenType.NONE, r'\bnone\b'),
             (TokenType.TRUE, r'\btrue\b'),
             (TokenType.FALSE, r'\bfalse\b'),
@@ -127,7 +129,7 @@ class Lexer:
             # keywords
             (TokenType.FUNCTION, r'\bfn\b'),
             (TokenType.GLOBAL, r'\bglobal\b'),
-            (TokenType.RETURN, r'\$\$'),
+            (TokenType.RETURN, r'->'),
             (TokenType.IF, r'\bif\b'),
             (TokenType.ELSE_IF, r'\belse if\b'),
             (TokenType.ELSE, r'\belse\b'),

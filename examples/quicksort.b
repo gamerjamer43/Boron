@@ -1,8 +1,8 @@
 #import Random
 
-fn quicksort(list arr) $$ list {
+fn quicksort(list arr) -> list {
     if length(arr) <= 1 {  
-        $$ arr
+        -> arr
     }
 
     int pivot = arr[length(arr) // 2]
@@ -21,7 +21,7 @@ fn quicksort(list arr) $$ list {
         }
     }
 
-    $$ quicksort(left) + equal + quicksort(right)
+    -> quicksort(left) + equal + quicksort(right)
 }
 
 list sample_list = Random.fill(20, 100)
