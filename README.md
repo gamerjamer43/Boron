@@ -1,9 +1,8 @@
 # BoronLang
 
 BoronLang is a statically typed, precision-first programming language designed for expressive control flow, rich data types, and seamless package integration. This README details every aspect of the language—from basic syntax to advanced features—so you can quickly get started writing robust programs.
-
-The goal of this language is to be a simple introduction to programming that slightly abstracts, but also expands on python to make it a mix of Java, Python, and C++ to give beginners an introduction to Object Oriented Programming.
 ---
+The goal of this language is to be a simple introduction to programming that slightly abstracts, but also expands on python to make it a mix of Java, Python, and C++ to give beginners an introduction to Object Oriented Programming.
 
 ## Table of Contents
 
