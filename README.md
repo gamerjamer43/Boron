@@ -1,6 +1,6 @@
-# BoronLang
+# Boron
 
-BoronLang is a statically typed, precision-first programming language designed for expressive control flow, rich data types, and seamless package integration. This README details every aspect of the language—from basic syntax to advanced features—so you can quickly get started writing robust programs.
+Boron is a statically typed, precision-first programming language designed for expressive control flow, rich data types, and seamless package integration. This README details every aspect of the language—from basic syntax to advanced features—so you can quickly get started writing robust programs.
 ---
 The goal of this language is to be a simple introduction to programming that slightly abstracts, but also expands on python to make it a mix of Java, Python, and C++ to give beginners an introduction to Object Oriented Programming.
 
@@ -23,16 +23,16 @@ The goal of this language is to be a simple introduction to programming that sli
 ## Installation & Running
 
 1. **Download/Clone the Repository:**  
-   Clone the BoronLang repository from GitHub or download the source.
+   Clone the Boron repository from GitHub or download the source.
 
 2. **Build/Assemble the Language:**  
    Follow the provided build instructions (e.g., using a provided Makefile or build script) to compile the language tools (lexer, parser, interpreter).
 
 3. **Run a Program:**  
-   Execute your BoronLang source file (e.g., `program.boron`) using the interpreter:
+   Execute your Boron source file (e.g., `program.b`) using the interpreter:
    
    ```
-   python run.py program.boron
+   python run.py program.b
    ```
 
    (Adjust the command according to your project setup.)
@@ -57,7 +57,7 @@ The goal of this language is to be a simple introduction to programming that sli
 
 ### Data Types
 
-BoronLang enforces types at compile time. The primary built-in types are:
+Boron enforces types at compile time. The primary built-in types are:
 
 - **Integer:** Whole numbers  
   Example: `42`
@@ -110,7 +110,7 @@ str myStr = "Hello, World!"
 
 ### Expressions and Operators
 
-BoronLang supports standard arithmetic, comparison, logical, and compound assignment operators.
+Boron supports standard arithmetic, comparison, logical, and compound assignment operators.
 
 - **Arithmetic Operators:**  
   ```
