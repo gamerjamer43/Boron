@@ -59,6 +59,8 @@ class Interpreter:
             return [self.evaluate(element) for element in node.elements]
         elif isinstance(node, ArrayLiteral):
             return self.evaluate_array_literal(node)
+        elif isinstance(node, VectorLiteral):
+            return self.evaluate_vector_literal(node)
         elif isinstance(node, RangeLiteral):
             return range(self.evaluate(node.start), self.evaluate(node.stop), self.evaluate(node.increment))
         elif isinstance(node, MethodCall):
@@ -80,6 +82,40 @@ class Interpreter:
                 self.evaluate(statement)
             except KeyboardInterrupt:
                 print("[red]KeyboardInterrupt[/red]")
+
+        # enforces type against the following for right now: integer, decimal, boolean, string, array (WIP)
+    def enforce_type(self, expected_type, value):
+        # make sure integers are whole numbers
+        if expected_type == TokenType.INTEGER:
+            # if value is a decimal, ensure it's whole.
+            if isinstance(value, Decimal):
+                if value % 1 != 0:
+                    raise ValueError(f"Cannot assign non-integer value {value} to an integer.")
+                return int(value)
+            if isinstance(value, int):
+                return value
+            raise ValueError(f"Expected integer, got {type(value)} with value {value}.")
+        
+        # make sure decimals are float values (FUCK FLOAT WE LOVE PRECISION)
+        elif expected_type == TokenType.DECIMAL:
+            # allow both int and Decimal; store as Decimal.
+            if isinstance(value, (Decimal, int)):
+                return Decimal(value)
+            raise ValueError(f"Expected decimal, got {type(value)} with value {value}.")
+        
+        # make sure bool is true or false
+        elif expected_type == TokenType.BOOLEAN:
+            if isinstance(value, bool):
+                return value
+            raise ValueError(f"Expected boolean, got {type(value)} with value {value}.")
+        
+        # make sure a string is a string literal
+        elif expected_type == TokenType.STR:
+            if isinstance(value, str):
+                return value
+            raise ValueError(f"Expected string, got {type(value)} with value {value}.")
+        
+        return value
 
     # loading for packages, packages are just .py files for right now, full python libraries soon
     def evaluate_import(self, node):
@@ -137,40 +173,6 @@ class Interpreter:
             print(f"Declared {node.var_type} {var_name} = {value}")
 
         self.global_scope[var_name] = value
-        return value
-
-    # enforces type against the following for right now: integer, decimal, boolean, string, array (WIP)
-    def enforce_type(self, expected_type, value):
-        # make sure integers are whole numbers
-        if expected_type == TokenType.INTEGER:
-            # if value is a decimal, ensure it's whole.
-            if isinstance(value, Decimal):
-                if value % 1 != 0:
-                    raise ValueError(f"Cannot assign non-integer value {value} to an integer.")
-                return int(value)
-            if isinstance(value, int):
-                return value
-            raise ValueError(f"Expected integer, got {type(value)} with value {value}.")
-        
-        # make sure decimals are float values (FUCK FLOAT WE LOVE PRECISION)
-        elif expected_type == TokenType.DECIMAL:
-            # allow both int and Decimal; store as Decimal.
-            if isinstance(value, (Decimal, int)):
-                return Decimal(value)
-            raise ValueError(f"Expected decimal, got {type(value)} with value {value}.")
-        
-        # make sure bool is true or false
-        elif expected_type == TokenType.BOOLEAN:
-            if isinstance(value, bool):
-                return value
-            raise ValueError(f"Expected boolean, got {type(value)} with value {value}.")
-        
-        # make sure a string is a string literal
-        elif expected_type == TokenType.STR:
-            if isinstance(value, str):
-                return value
-            raise ValueError(f"Expected string, got {type(value)} with value {value}.")
-        
         return value
 
     def evaluate_binary_operation(self, node):
@@ -361,6 +363,17 @@ class Interpreter:
             raise ValueError(f"Array size mismatch: expected {node.size}, got {len(elements)}")
         
         # afterwards, enforce type
+        print(f"Enforcing type for array: {elements}")
+        for element in elements:
+            self.enforce_type(node.type, element)
+
+        return elements
+    
+    def evaluate_vector_literal(self, node):
+        # evaluate each element in the node
+        elements = [self.evaluate(element) for element in node.elements]
+        
+        # enforce type, dwb size
         print(f"Enforcing type for array: {elements}")
         for element in elements:
             self.enforce_type(node.type, element)

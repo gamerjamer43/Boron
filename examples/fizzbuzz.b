@@ -1,16 +1,19 @@
-#! get input as a number
-int numinput
-
-while true {
-    numinput = toInt(inp("> "))
-
+#! define fizzbuzz function
+fn fizzbuzz(int numinput) -> str {
     if numinput % 5 == 0 and numinput % 3 == 0 {
-        out("FizzBuzz")
+        -> "FizzBuzz"
     } else if numinput % 3 == 0 {
-        out("Fizz")
+        -> "Fizz"
     } else if numinput % 5 == 0 {
-        out("Buzz")
+        -> "Buzz"
     } else {
-        out(numinput)
+        -> numinput
     }
+}
+
+#! while true
+while true {
+    int numinput = toInt(inp("> ")) #! take input, convert to int
+    str fb = fizzbuzz(numinput) #! run it thru fizzbuzz function
+    out(fb) #! print
 }

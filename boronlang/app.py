@@ -1,22 +1,17 @@
-from tkinter import Tk, filedialog
+import argparse
 from assembler import assemble
 
-# Hide the main Tkinter window
-root = Tk()
-root.withdraw()
+# Set up argument parsing
+parser = argparse.ArgumentParser(description="Assemble a .b file")
+parser.add_argument("filename", help="Path to the .b file")
+parser.add_argument("extra_args", nargs="*", help="Additional arguments")
 
-# Open a file dialog to select a .b file
-file = filedialog.askopenfilename(
-    title="Select a .b file",
-    filetypes=[("Boron Files", "*.b")]
-)
+# Parse the arguments
+args = parser.parse_args()
 
-# Check if a file was selected
-if file:
-    assemble(file)
-else:
-    print("No file selected.")
+# Call the assemble function with the provided filename
+assemble(args.filename)
 
-
-lis = [1, 2, 3]
-lis[1] = 4
+# Print any additional arguments
+if args.extra_args:
+    print("Additional arguments:", args.extra_args)

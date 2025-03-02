@@ -29,7 +29,7 @@ The goal of this language is to be a simple introduction to programming that sli
    Execute your Boron source file (e.g., `program.b`) using the interpreter:
    
    ```
-   python run.py program.b
+   python C:\Users\[user]\Downloads\Boron\boronlang\app.py program.b
    ```
 
    (Adjust the command according to your project setup.)
@@ -216,7 +216,7 @@ out(myFunction(1, 2))  #! Expected to output false
 Imports are also really simple, just #import said package, and you can use it's methods!
   
 ```
-math.sin(0.5)
+Math.sin(0.5)
 ```
 
 ---

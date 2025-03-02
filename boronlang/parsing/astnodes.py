@@ -94,7 +94,7 @@ class UnaryOperation(ASTNode):
         return f'UnaryOperation({self.operator}, {self.operand})'
 
 # control flow
-# lines 98-115
+# lines 98-131
 class IfStatement(ASTNode):
     def __init__(self, condition, if_body, else_body=None):
         self.condition = condition
@@ -131,7 +131,7 @@ class DoWhileLoop(ASTNode):
         return f'DoWhileLoop({self.body}, {self.condition})'
 
 # literals
-# lines 135-204
+# lines 135-220
 class Identifier(ASTNode):
     def __init__(self, name):
         self.name = name
@@ -175,13 +175,21 @@ class ListLiteral(ASTNode):
         return f'ListLiteral({self.elements})'
 
 class ArrayLiteral(ASTNode):
-    def __init__(self, type, size, elements):
-        self.type = type
+    def __init__(self, typ, size, elements):
+        self.type = typ
         self.size = size
         self.elements = elements
     
     def __repr__(self):
         return f'ArrayLiteral({self.size}, {self.type}, {self.elements})'
+    
+class VectorLiteral(ASTNode):
+    def __init__(self, typ, elements):
+        self.type = typ
+        self.elements = elements
+    
+    def __repr__(self):
+        return f'VectorLiteral({self.type}, {self.elements})'
     
 class RangeLiteral(ASTNode):
     def __init__(self, start, stop, increment):

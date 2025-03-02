@@ -6,6 +6,8 @@ from rich import print
 # length
 def length(value):
     try:
+        if type(value) == int:
+            return len(str(value))
         return len(value)
     except TypeError:
         raise ValueError("Object has no length.")
@@ -52,10 +54,12 @@ def toBool(string: str) -> bool:
         exit(0)
 
 BUILTINS = {
-    "length": length,
     "inp": inp,
     "out": out,
     "err": err,
+
+    "length": length,
+
     "toInt": toInt,
     "toStr": toStr,
     "toDec": toDec,

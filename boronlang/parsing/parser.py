@@ -5,11 +5,11 @@ from parsing.astnodes import Program, Import, EndOfFile
 # declaration and function nodes
 from parsing.astnodes import VariableDeclaration, Function, FunctionCall, MethodCall, Parameter, ReturnStatement
 # operation nodes
-from parsing.astnodes import BinaryOperation, LogicalOperation, UnaryOperation
+from parsing.astnodes import BinaryOperation, LogicalOperation, UnaryOperation, IndexAccess, IndexAssignment
 # control flow nodes
 from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop
 # variable nodes
-from parsing.astnodes import Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, IndexAccess, IndexAssignment
+from parsing.astnodes import Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, VectorLiteral
 # scope
 from parsing.scope import Scope
 
@@ -54,12 +54,14 @@ class Parser:
         if token.type == TokenType.IMPORT:
             return self.parse_import()
         elif token.type in [TokenType.INTEGER, TokenType.BOOLEAN, TokenType.STR, TokenType.TUPLE,
-                            TokenType.LIST, TokenType.VECTOR, TokenType.SET, TokenType.DEC]:
+                            TokenType.LIST, TokenType.SET, TokenType.DEC]:
             return self.parse_variable_declaration()
         elif token.type == TokenType.RANGE:
             return self.parse_range_declaration()
         elif token.type == TokenType.ARRAY:
             return self.parse_array_declaration()
+        elif token.type == TokenType.VECTOR:
+            return self.parse_vector_declaration()
         elif token.type == TokenType.CLASS:
             return self.parse_class_declaration()
         if token.type == TokenType.GLOBAL:
@@ -171,6 +173,30 @@ class Parser:
         self.expect(TokenType.RIGHT_BRACKET)
         print(repr(VariableDeclaration(arraytype, Identifier(name), ArrayLiteral(typ, size, elements))))
         return VariableDeclaration(arraytype, Identifier(name), ArrayLiteral(typ, size, elements))
+    
+    def parse_vector_declaration(self):
+        elements = []
+        name = self.current_token().value.value
+
+        if self.scope.is_declared(name):
+            raise SyntaxError(f"Variable '{name}' already declared in this scope.")
+
+        self.scope.declare_variable(name, TokenType.VECTOR)
+        arraytype = self.current_token().type
+        self.next_token()
+        self.expect(TokenType.LEFT_BRACKET)
+        typ = self.expect(self.current_token().type).type
+        self.expect(TokenType.RIGHT_BRACKET)
+        self.expect(TokenType.ASSIGN)
+        self.expect(TokenType.LEFT_BRACKET)
+        while self.current_token().type != TokenType.RIGHT_BRACKET:
+            elements.append(self.parse_expression())
+            if self.current_token().type == TokenType.COMMA:
+                self.next_token()
+
+        self.expect(TokenType.RIGHT_BRACKET)
+        print(repr(VariableDeclaration(arraytype, Identifier(name), VectorLiteral(typ, elements))))
+        return VariableDeclaration(arraytype, Identifier(name), VectorLiteral(typ, elements))
         
     def parse_identifier(self):
         # add more scope here

@@ -109,6 +109,9 @@ class Lexer:
     # the function to turn the text into tokens. i want to just put this inside the enum without breaking anything
     def tokenize(self):
         token_specification = [
+            # numbers at the top (negatives were being annoying)
+            (TokenType.NUMBER, r'-?\b\d+?\b'),
+
             # types
             (TokenType.INTEGER, r'\bint\b'),
             (TokenType.DEC, r'\bdec\b'),
@@ -169,7 +172,6 @@ class Lexer:
             # comments, identifers, literals
             (TokenType.COMMENT, r'#!.*|##!.*?##!'),
             (TokenType.IDENTIFIER, r'\b[a-zA-Z_][a-zA-Z0-9_]*\b'),
-            (TokenType.NUMBER, r'-?\b\d+?\b'),
             (TokenType.STRING, r'"([^"\\]|\\.)*"|\'([^\'\\]|\\.)*\''),
             (TokenType.UNTERMINATED_STRING, r'"([^"\\]|\\.)*$|\'([^\'\\]|\\.)*$'),
             
