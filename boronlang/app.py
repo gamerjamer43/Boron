@@ -10,8 +10,4 @@ parser.add_argument("extra_args", nargs="*", help="Additional arguments")
 args = parser.parse_args()
 
 # Call the assemble function with the provided filename
-assemble(args.filename)
-
-# Print any additional arguments
-if args.extra_args:
-    print("Additional arguments:", args.extra_args)
+assemble(args.filename, args.extra_args if args.extra_args else None)

@@ -5,84 +5,96 @@ import re
 from enum import Enum
 
 # the token type enum, which holds a list of ALL the tokentypes
-class TokenType(Enum):
-    # types
-    INTEGER = "int"
-    DEC = "dec"
-    BOOLEAN = "bool"
-    STR = "str"
-    RANGE = "range"
-    TUPLE = "tuple"
-    LIST = "list"
-    ARRAY = "array"
-    VECTOR = "vec"
-    SET = "set"
-    CLASS = "class"
-    DICT = "dict"
-    NONE = "none"
+import re
+from enum import Enum
 
+class TokenType(Enum):
+    # numbers
+    NUMBER = ("number", r'-?\b\d+?\b')
+    
+    # types
+    INTEGER = ("int", r'\bint\b')
+    DEC = ("dec", r'\bdec\b')
+    BOOLEAN = ("bool", r'\bbool\b')
+    STR = ("str", r'\bstr\b')
+    RANGE = ("range", r'\brange\b')
+    TUPLE = ("tuple", r'\btuple\b')
+    LIST = ("list", r'\blist\b')
+    ARRAY = ("array", r'\barray\b')
+    VECTOR = ("vec", r'\bvec\b')
+    SET = ("set", r'\bset\b')
+    CLASS = ("class", r'\bclass\b')
+    DICT = ("dict", r'\bdict\b')
+    NONE = ("none", r'\bnone\b')
+    TRUE = ("true", r'\btrue\b')
+    FALSE = ("false", r'\bfalse\b')
+    
     # keywords
-    FUNCTION = "fn"
-    GLOBAL = "global"
-    RETURN = "->"
-    IF = "if"
-    ELSE_IF = "else if"
-    ELSE = "else"
-    WHILE = "while"
-    DO = "do"
-    FOR = "for"
-    IMPORT = "#import"
-    IN = "in"
+    FUNCTION = ("fn", r'\bfn\b')
+    GLOBAL = ("global", r'\bglobal\b')
+    RETURN = ("->", r'->')
+    IF = ("if", r'\bif\b')
+    ELSE_IF = ("else if", r'\belse if\b')
+    ELSE = ("else", r'\belse\b')
+    WHILE = ("while", r'\bwhile\b')
+    DO = ("do", r'\bdo\b')
+    FOR = ("for", r'\bfor\b')
+    IN = ("in", r'\bin\b')
+    IMPORT = ("#import", r'#\bimport\b')
+    AND = ("and", r'\band\b')
+    OR = ("or", r'\bor\b')
+    AS = ("as", r'\bas\b')
     
     # operators
-    TRUE = "true"
-    FALSE = "false"
-    OR = "or"
-    AND = "and"
-    EQUAL = "=="
-    NOT_EQUAL = "!="
-    NOT = "!"
-    GREATER_EQUAL = ">="
-    LESS_EQUAL = "<="
-    GREATER_THAN = ">"
-    LESS_THAN = "<"
-    ASSIGN = "="
-    INCREASE = "+="
-    ADD = "+"
-    INCREMENT = "++"
-    DECREASE = "-="
-    SUBTRACT = "-"
-    DECREMENT = "--"
-    MULTEQ = "*="
-    MULTIPLY = "*"
-    DIVEQ = "/="
-    DIVIDE = "/"
-    POWEQ = "**="
-    POWER = "**"
-    FLOOREQ = "//="
-    FLOOR_DIVIDE = "//"
-    MODULUS = "%"
+    EQUAL = ("==", r'==')
+    NOT_EQUAL = ("!=", r'!=')
+    NOT = ("!", r'!')
+    GREATER_EQUAL = (">=", r'>=')
+    LESS_EQUAL = ("<=", r'<=')
+    GREATER_THAN = (">", r'>')
+    LESS_THAN = ("<", r'<')
+    ASSIGN = ("=", r'=')
+    INCREASE = ("+=", r'\+=')
+    INCREMENT = ("++", r'\+\+')
+    ADD = ("+", r'\+')
+    DECREASE = ("-=", r'-=')
+    DECREMENT = ("--", r'--')
+    SUBTRACT = ("-", r'-')
+    POWEQ = ("**=", r'\*\*=')
+    POWER = ("**", r'\*\*')
+    MULTEQ = ("*=", r'\*=')
+    MULTIPLY = ("*", r'\*')
+    DIVEQ = ("/=", r'/=')
+    FLOOREQ = ("//=", r'//=')
+    FLOOR_DIVIDE = ("//", r'//')
+    DIVIDE = ("/", r'/')
+    MODULUS = ("%", r'%')
+    
+    # comments, identifiers, literals
+    COMMENT = ("COMMENT", r'#!.*|##!.*?##!')
+    IDENTIFIER = ("identifier", r'\b[a-zA-Z_][a-zA-Z0-9_]*\b')
+    STRING = ("string", r'"([^"\\]|\\.)*"|\'([^\'\\]|\\.)*\'')
+    UNTERMINATED_STRING = ("unterminated", r'"([^"\\]|\\.)*$|\'([^\'\\]|\\.)*$')
     
     # braces and punctuation marks
-    LEFT_BRACKET = "["
-    RIGHT_BRACKET = "]"
-    LEFT_BRACE = "{"
-    RIGHT_BRACE = "}"
-    LEFT_PAREN = "("
-    RIGHT_PAREN = ")"
-    COMMA = ","
-    SEMICOLON = ";"
-    PERIOD = "."
+    LEFT_BRACKET = ("[", r'\[')
+    RIGHT_BRACKET = ("]", r'\]')
+    LEFT_BRACE = ("{", r'\{')
+    RIGHT_BRACE = ("}", r'\}')
+    LEFT_PAREN = ("(", r'\(')
+    RIGHT_PAREN = (")", r'\)')
+    COMMA = (",", r',')
+    SEMICOLON = (";", r';')
+    PERIOD = (".", r'\.')
     
-    # comments, idenitifiers, literals, eof, eol
-    COMMENT = "COMMENT"
-    IDENTIFIER = "IDENTIFIER"
-    NUMBER = "NUMBER"
-    STRING = "STRING"
-    DECIMAL = "DECIMAL"
-    UNTERMINATED_STRING = "UNTERMINATED_STRING"
-    EOF = "EOF"
-    EOL = "EOL"
+    # special tokens (handled separately)
+    DECIMAL = ("decimal", None)
+    EOF = ("EOF", None)
+    EOL = ("EOL", None)
+
+    def __init__(self, label, pattern):
+        self.label = label
+        self.pattern = pattern
 
 # the token class, which defines it's type, value, and it's position on both line and column
 class Token:
@@ -109,82 +121,9 @@ class Lexer:
     # the function to turn the text into tokens. i want to just put this inside the enum without breaking anything
     def tokenize(self):
         token_specification = [
-            # numbers at the top (negatives were being annoying)
-            (TokenType.NUMBER, r'-?\b\d+?\b'),
-
-            # types
-            (TokenType.INTEGER, r'\bint\b'),
-            (TokenType.DEC, r'\bdec\b'),
-            (TokenType.BOOLEAN, r'\bbool\b'),
-            (TokenType.STR, r'\bstr\b'),
-            (TokenType.RANGE, r'\brange\b'),
-            (TokenType.TUPLE, r'\btuple\b'),
-            (TokenType.LIST, r'\blist\b'),
-            (TokenType.ARRAY, r'\barray\b'),
-            (TokenType.VECTOR, r'\bvec\b'),
-            (TokenType.SET, r'\bset\b'),
-            (TokenType.CLASS, r'\bclass\b'),
-            (TokenType.DICT, r'\bdict\b'),
-            (TokenType.NONE, r'\bnone\b'),
-            (TokenType.TRUE, r'\btrue\b'),
-            (TokenType.FALSE, r'\bfalse\b'),
-
-            # keywords
-            (TokenType.FUNCTION, r'\bfn\b'),
-            (TokenType.GLOBAL, r'\bglobal\b'),
-            (TokenType.RETURN, r'->'),
-            (TokenType.IF, r'\bif\b'),
-            (TokenType.ELSE_IF, r'\belse if\b'),
-            (TokenType.ELSE, r'\belse\b'),
-            (TokenType.WHILE, r'\bwhile\b'),
-            (TokenType.DO, r'\bdo\b'),
-            (TokenType.FOR, r'\bfor\b'),
-            (TokenType.IN, r'\bin\b'),
-            (TokenType.IMPORT, r'#\bimport\b'),
-            (TokenType.AND, r'\band\b'),
-            (TokenType.OR, r'\bor\b'),
-
-            # operators
-            (TokenType.EQUAL, r'=='),
-            (TokenType.NOT_EQUAL, r'!='),
-            (TokenType.NOT, r'!'),
-            (TokenType.GREATER_EQUAL, r'>='),
-            (TokenType.LESS_EQUAL, r'<='),
-            (TokenType.GREATER_THAN, r'>'),
-            (TokenType.LESS_THAN, r'<'),
-            (TokenType.ASSIGN, r'='),
-            (TokenType.INCREASE, r'\+='),
-            (TokenType.INCREMENT, r'\+\+'),
-            (TokenType.ADD, r'\+'),
-            (TokenType.DECREASE, r'-='),
-            (TokenType.DECREMENT, r'--'),
-            (TokenType.SUBTRACT, r'-'),
-            (TokenType.POWEQ, r'\*\*='),
-            (TokenType.POWER, r'\*\*'),
-            (TokenType.MULTEQ, r'\*='),
-            (TokenType.MULTIPLY, r'\*'),
-            (TokenType.DIVEQ, r'/='),
-            (TokenType.FLOOREQ, r'//='),
-            (TokenType.FLOOR_DIVIDE, r'//'),
-            (TokenType.DIVIDE, r'/'),
-            (TokenType.MODULUS, r'%'),
-
-            # comments, identifers, literals
-            (TokenType.COMMENT, r'#!.*|##!.*?##!'),
-            (TokenType.IDENTIFIER, r'\b[a-zA-Z_][a-zA-Z0-9_]*\b'),
-            (TokenType.STRING, r'"([^"\\]|\\.)*"|\'([^\'\\]|\\.)*\''),
-            (TokenType.UNTERMINATED_STRING, r'"([^"\\]|\\.)*$|\'([^\'\\]|\\.)*$'),
-            
-            # braces and punctuation marks
-            (TokenType.LEFT_BRACKET, r'\['),
-            (TokenType.RIGHT_BRACKET, r'\]'),
-            (TokenType.LEFT_BRACE, r'\{'),
-            (TokenType.RIGHT_BRACE, r'\}'),
-            (TokenType.LEFT_PAREN, r'\('),
-            (TokenType.RIGHT_PAREN, r'\)'),
-            (TokenType.COMMA, r','),
-            (TokenType.SEMICOLON, r';'),
-            (TokenType.PERIOD, r'\.'),
+            (token_type, token_type.pattern)
+            for token_type in TokenType
+            if token_type.pattern is not None
         ]
         
         # make a regex matcher for each token type and compile it
@@ -253,7 +192,7 @@ class Lexer:
                         continue
                 
                 # if static type definition
-                if tok_type in [TokenType.FUNCTION, TokenType.INTEGER, TokenType.DEC, TokenType.BOOLEAN, TokenType.STR, TokenType.IMPORT, TokenType.TUPLE, TokenType.SET, TokenType.ARRAY, TokenType.LIST, TokenType.VECTOR, TokenType.RANGE, TokenType.CLASS]:
+                if tok_type in [TokenType.FUNCTION, TokenType.INTEGER, TokenType.DEC, TokenType.BOOLEAN, TokenType.STR, TokenType.IMPORT, TokenType.AS, TokenType.TUPLE, TokenType.SET, TokenType.ARRAY, TokenType.LIST, TokenType.VECTOR, TokenType.RANGE, TokenType.CLASS]:
                     # get token after that
                     line = line[mo.end():].lstrip()
                     mo_identifier = get_token(line)

@@ -48,40 +48,36 @@ class Parser:
 
     def parse_statement(self):
         token = self.current_token()
-        while self.current_token().type == TokenType.EOL:
+        while token.type == TokenType.EOL:
             self.line += 1
             token = self.next_token()
-        if token.type == TokenType.IMPORT:
-            return self.parse_import()
-        elif token.type in [TokenType.INTEGER, TokenType.BOOLEAN, TokenType.STR, TokenType.TUPLE,
-                            TokenType.LIST, TokenType.SET, TokenType.DEC]:
-            return self.parse_variable_declaration()
-        elif token.type == TokenType.RANGE:
-            return self.parse_range_declaration()
-        elif token.type == TokenType.ARRAY:
-            return self.parse_array_declaration()
-        elif token.type == TokenType.VECTOR:
-            return self.parse_vector_declaration()
-        elif token.type == TokenType.CLASS:
-            return self.parse_class_declaration()
-        if token.type == TokenType.GLOBAL:
-            return self.parse_global_declaration()
-        elif token.type == TokenType.IDENTIFIER:
-            return self.parse_identifier()
-        elif token.type == TokenType.FUNCTION:
-            return self.parse_function()
-        elif token.type == TokenType.IF:
-            return self.parse_if_statement()
-        elif token.type == TokenType.FOR:
-            return self.parse_for_loop()
-        elif token.type == TokenType.WHILE:
-            return self.parse_while_loop()
-        elif token.type == TokenType.DO:
-            return self.parse_do_while_loop()
-        elif token.type == TokenType.RETURN:
-            return self.parse_return_statement()
-        elif token.type == TokenType.EOF:
-            return EndOfFile()
+
+        dispatch_table = {
+            TokenType.IMPORT: self.parse_import,
+            TokenType.INTEGER: self.parse_variable_declaration,
+            TokenType.BOOLEAN: self.parse_variable_declaration,
+            TokenType.STR: self.parse_variable_declaration,
+            TokenType.TUPLE: self.parse_variable_declaration,
+            TokenType.LIST: self.parse_variable_declaration,
+            TokenType.SET: self.parse_variable_declaration,
+            TokenType.DEC: self.parse_variable_declaration,
+            TokenType.RANGE: self.parse_range_declaration,
+            TokenType.ARRAY: self.parse_array_declaration,
+            TokenType.VECTOR: self.parse_vector_declaration,
+            TokenType.CLASS: self.parse_class_declaration,
+            TokenType.GLOBAL: self.parse_global_declaration,
+            TokenType.IDENTIFIER: self.parse_identifier,
+            TokenType.FUNCTION: self.parse_function,
+            TokenType.IF: self.parse_if_statement,
+            TokenType.FOR: self.parse_for_loop,
+            TokenType.WHILE: self.parse_while_loop,
+            TokenType.DO: self.parse_do_while_loop,
+            TokenType.RETURN: self.parse_return_statement,
+            TokenType.EOF: lambda: EndOfFile()
+        }
+
+        if token.type in dispatch_table:
+            return dispatch_table[token.type]()
         else:
             raise SyntaxError(f"Unexpected token {token.type}")
     
@@ -310,6 +306,10 @@ class Parser:
         import_token = self.expect(TokenType.IMPORT)
         if not isinstance(import_token.value, Token) or import_token.value.type != TokenType.IDENTIFIER:
             raise SyntaxError(f"Invalid import statement: Expected an identifier, found {import_token.value}")
+        
+        # if self.next_token().type == TokenType.AS:
+            # add that here
+            # pass
 
         module = import_token.value.value
         if self.scope.is_imported(module):

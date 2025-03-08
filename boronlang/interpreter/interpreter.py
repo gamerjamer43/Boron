@@ -18,62 +18,44 @@ class Interpreter:
         self.package_folder = "C:\\Users\\fuzio\\Downloads\\programs\\showcase\\Boron\\packages"
         self.global_scope.update(BUILTINS)
 
+        self.dispatch = {
+            Program: self.evaluate_program,
+            Import: self.evaluate_import,
+            VariableDeclaration: self.evaluate_variable_declaration,
+            BinaryOperation: self.evaluate_binary_operation,
+            UnaryOperation: self.evaluate_unary_operation,
+            IfStatement: self.evaluate_if_statement,
+            ForLoop: self.evaluate_for_loop,
+            WhileLoop: self.evaluate_while_loop,
+            DoWhileLoop: self.evaluate_do_while_loop,
+            Function: self.evaluate_function,
+            FunctionCall: self.evaluate_function_call,
+            ReturnStatement: self.evaluate_return_statement,
+            Identifier: self.evaluate_identifier,
+            IntLiteral: lambda node: int(node.value),
+            DecLiteral: lambda node: Decimal(node.value),
+            StringLiteral: lambda node: str(node.value),
+            BooleanLiteral: lambda node: node.value.lower() == "true",
+            ListLiteral: lambda node: [self.evaluate(el) for el in node.elements],
+            ArrayLiteral: self.evaluate_array_literal,
+            VectorLiteral: self.evaluate_vector_literal,
+            RangeLiteral: lambda node: range(
+                self.evaluate(node.start),
+                self.evaluate(node.stop),
+                self.evaluate(node.increment)
+            ),
+            MethodCall: self.evaluate_method_call,
+            IndexAccess: self.evaluate_index_access,
+            IndexAssignment: self.evaluate_index_assignment,
+            EndOfFile: lambda node: None,
+        }
+
     # the main evaluation function for the program. every node will go through this
     def evaluate(self, node):
-        # break it down by what it's an instance of
-        if isinstance(node, Program):
-            return self.evaluate_program(node)
-        elif isinstance(node, Import):
-            return self.evaluate_import(node)
-        elif isinstance(node, VariableDeclaration):
-            return self.evaluate_variable_declaration(node)
-        elif isinstance(node, BinaryOperation):
-            return self.evaluate_binary_operation(node)
-        elif isinstance(node, UnaryOperation):
-            return self.evaluate_unary_operation(node)
-        elif isinstance(node, IfStatement):
-            return self.evaluate_if_statement(node)
-        elif isinstance(node, ForLoop):
-            return self.evaluate_for_loop(node)
-        elif isinstance(node, WhileLoop):
-            return self.evaluate_while_loop(node)
-        elif isinstance(node, DoWhileLoop):
-            return self.evaluate_do_while_loop(node)
-        elif isinstance(node, Function):
-            return self.evaluate_function(node)
-        elif isinstance(node, FunctionCall):
-            return self.evaluate_function_call(node)
-        elif isinstance(node, ReturnStatement):
-            return self.evaluate_return_statement(node)
-        elif isinstance(node, Identifier):
-            return self.evaluate_identifier(node)
-        elif isinstance(node, IntLiteral):
-            return int(node.value)
-        elif isinstance(node, DecLiteral):
-            return Decimal(node.value)
-        elif isinstance(node, StringLiteral):
-            return str(node.value)
-        elif isinstance(node, BooleanLiteral):
-            return node.value.lower() == "true"
-        elif isinstance(node, ListLiteral):
-            return [self.evaluate(element) for element in node.elements]
-        elif isinstance(node, ArrayLiteral):
-            return self.evaluate_array_literal(node)
-        elif isinstance(node, VectorLiteral):
-            return self.evaluate_vector_literal(node)
-        elif isinstance(node, RangeLiteral):
-            return range(self.evaluate(node.start), self.evaluate(node.stop), self.evaluate(node.increment))
-        elif isinstance(node, MethodCall):
-            return self.evaluate_method_call(node)
-        elif isinstance(node, IndexAccess):
-            return self.evaluate_index_access(node)
-        elif isinstance(node, IndexAssignment):
-            return self.evaluate_index_assignment(node)
-        elif isinstance(node, EndOfFile):
-            return None
-        # if no instance, raise not implemented error because it hasn't been implemented
-        else:
+        func = self.dispatch.get(type(node))
+        if func is None:
             raise NotImplementedError(f"Evaluation for {node} not implemented.")
+        return func(node)
 
     # wrapper to push the entire program through evaluation
     def evaluate_program(self, program):
@@ -134,7 +116,7 @@ class Interpreter:
 
         # add to global scope
         self.global_scope[module_name] = module
-        print(f"Imported package: {module_name}")
+        # print(f"Imported package: {module_name}")
     
     # variable evaluation, checks type with the function below
     def evaluate_variable_declaration(self, node):
@@ -163,14 +145,14 @@ class Interpreter:
                 value = None
 
         # finally enforce type
-        print(f"Enforcing type for {node.var_type}, {node.name}: {value}")
+        # print(f"Enforcing type for {node.var_type}, {node.name}: {value}")
         value = self.enforce_type(node.var_type, value)
         
         # and add to global scope (this is just for logging purposes)
-        if var_name in self.global_scope:
-            print(f"Assigned {var_name} = {value}")
-        else:
-            print(f"Declared {node.var_type} {var_name} = {value}")
+        # if var_name in self.global_scope:
+            # print(f"Assigned {var_name} = {value}")
+        # else:
+            # print(f"Declared {node.var_type} {var_name} = {value}")
 
         self.global_scope[var_name] = value
         return value
@@ -250,7 +232,7 @@ class Interpreter:
                     if isinstance(value, bool):
                         # negate the boolean value in the global scope
                         self.global_scope[identifier_name] = not value
-                        print(f"Negated {identifier_name}: {not value}")
+                        # print(f"Negated {identifier_name}: {not value}")
                         return not value
                     else:
                         raise TypeError(f"'{identifier_name}' is not a boolean and cannot be negated.")
@@ -263,13 +245,13 @@ class Interpreter:
         elif node.operator == TokenType.INCREMENT:
             if isinstance(node.operand, Identifier):
                 self.global_scope[node.operand.name] += 1
-                print(f"Incremented {node.operand.name} +1")
+                # print(f"Incremented {node.operand.name} +1")
                 return operand
             return operand + 1
         elif node.operator == TokenType.DECREMENT:
             if isinstance(node.operand, Identifier):
                 self.global_scope[node.operand.name] -= 1
-                print(f"Decremented {node.operand.name} -1")
+                # print(f"Decremented {node.operand.name} -1")
                 return operand
             return operand - 1
         else:
@@ -314,7 +296,7 @@ class Interpreter:
 
     def evaluate_function(self, node):
         self.global_scope[node.name.value] = node
-        print(f"Defined function: {node.name.value}")
+        # print(f"Defined function: {node.name.value}")
 
     def evaluate_function_call(self, node):
         func_name = node.name
@@ -363,7 +345,7 @@ class Interpreter:
             raise ValueError(f"Array size mismatch: expected {node.size}, got {len(elements)}")
         
         # afterwards, enforce type
-        print(f"Enforcing type for array: {elements}")
+        # print(f"Enforcing type for array: {elements}")
         for element in elements:
             self.enforce_type(node.type, element)
 
@@ -374,7 +356,7 @@ class Interpreter:
         elements = [self.evaluate(element) for element in node.elements]
         
         # enforce type, dwb size
-        print(f"Enforcing type for array: {elements}")
+        # print(f"Enforcing type for array: {elements}")
         for element in elements:
             self.enforce_type(node.type, element)
 

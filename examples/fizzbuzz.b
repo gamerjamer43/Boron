@@ -14,6 +14,6 @@ fn fizzbuzz(int numinput) -> str {
 #! while true
 while true {
     int numinput = toInt(inp("> ")) #! take input, convert to int
-    str fb = fizzbuzz(numinput) #! run it thru fizzbuzz function
+    str fb = toStr(fizzbuzz(numinput)) #! run it thru fizzbuzz function
     out(fb) #! print
 }
