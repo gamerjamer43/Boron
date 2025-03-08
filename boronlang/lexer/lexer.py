@@ -4,10 +4,6 @@ import re
 # enum to hold the token enum
 from enum import Enum
 
-# the token type enum, which holds a list of ALL the tokentypes
-import re
-from enum import Enum
-
 class TokenType(Enum):
     # numbers
     NUMBER = ("number", r'-?\b\d+?\b')

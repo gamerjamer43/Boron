@@ -8,7 +8,7 @@ from decimal import Decimal
 import importlib.util, os
 from rich import print  # colored prints
 
-# builtin functions?
+# builtin functions
 from interpreter.builtins import BUILTINS
 
 class Interpreter:
@@ -67,36 +67,34 @@ class Interpreter:
 
         # enforces type against the following for right now: integer, decimal, boolean, string, array (WIP)
     def enforce_type(self, expected_type, value):
-        # make sure integers are whole numbers
-        if expected_type == TokenType.INTEGER:
-            # if value is a decimal, ensure it's whole.
+        # Ensure integers are whole numbers
+        if expected_type is TokenType.INTEGER:
             if isinstance(value, Decimal):
                 if value % 1 != 0:
-                    raise ValueError(f"Cannot assign non-integer value {value} to an integer.")
+                    raise ValueError("Cannot assign non-integer value {} to an integer.".format(value))
                 return int(value)
             if isinstance(value, int):
                 return value
-            raise ValueError(f"Expected integer, got {type(value)} with value {value}.")
-        
-        # make sure decimals are float values (FUCK FLOAT WE LOVE PRECISION)
-        elif expected_type == TokenType.DECIMAL:
-            # allow both int and Decimal; store as Decimal.
+            raise ValueError("Expected integer, got {} with value {}.".format(type(value), value))
+
+        # Ensure decimals are stored as Decimal
+        elif expected_type is TokenType.DECIMAL:
             if isinstance(value, (Decimal, int)):
                 return Decimal(value)
-            raise ValueError(f"Expected decimal, got {type(value)} with value {value}.")
-        
-        # make sure bool is true or false
-        elif expected_type == TokenType.BOOLEAN:
+            raise ValueError("Expected decimal, got {} with value {}.".format(type(value), value))
+
+        # Ensure booleans are actual booleans
+        elif expected_type is TokenType.BOOLEAN:
             if isinstance(value, bool):
                 return value
-            raise ValueError(f"Expected boolean, got {type(value)} with value {value}.")
-        
-        # make sure a string is a string literal
-        elif expected_type == TokenType.STR:
+            raise ValueError("Expected boolean, got {} with value {}.".format(type(value), value))
+
+        # Ensure strings are proper string literals
+        elif expected_type is TokenType.STR:
             if isinstance(value, str):
                 return value
-            raise ValueError(f"Expected string, got {type(value)} with value {value}.")
-        
+            raise ValueError("Expected string, got {} with value {}.".format(type(value), value))
+
         return value
 
     # loading for packages, packages are just .py files for right now, full python libraries soon
