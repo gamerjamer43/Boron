@@ -2,14 +2,14 @@
 from lexer.lexer import Token, TokenType
 # important nodes
 from parsing.astnodes import Program, Import, EndOfFile
-# declaration and function nodes
-from parsing.astnodes import VariableDeclaration, Function, FunctionCall, MethodCall, Parameter, ReturnStatement
+# class and function nodes
+from parsing.astnodes import Function, FunctionCall, MethodCall, Parameter, ReturnStatement, FieldAccess, FieldAssignment, ClassInstantiation
 # operation nodes
 from parsing.astnodes import BinaryOperation, LogicalOperation, UnaryOperation, IndexAccess, IndexAssignment
 # control flow nodes
 from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop
 # variable nodes
-from parsing.astnodes import Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, VectorLiteral
+from parsing.astnodes import VariableDeclaration, Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, VectorLiteral
 # scope
 from parsing.scope import Scope
 
@@ -80,6 +80,7 @@ class Parser:
             return dispatch_table[token.type]()
         else:
             raise SyntaxError(f"Unexpected token {token.type}")
+  
     
     # wip, hopefully this should parse blocks correctly
     def parse_block(self):
@@ -119,8 +120,9 @@ class Parser:
 
         self.scope.declare_variable(name, var_type)
 
-        print(repr(VariableDeclaration(var_type, name, value)))
+        # print(repr(VariableDeclaration(var_type, name, value)))
         return VariableDeclaration(var_type, name, value)
+
 
     def parse_range_declaration(self):
         # add support for variable ranges
@@ -140,9 +142,10 @@ class Parser:
         self.expect(TokenType.RIGHT_PAREN)
         self.scope.declare_variable(name, TokenType.RANGE)
 
-        print(repr(VariableDeclaration(TokenType.RANGE, name, RangeLiteral(IntLiteral(start), IntLiteral(stop), IntLiteral(increment)))))
+        # print(repr(VariableDeclaration(TokenType.RANGE, name, RangeLiteral(IntLiteral(start), IntLiteral(stop), IntLiteral(increment)))))
         return VariableDeclaration(TokenType.RANGE, name, RangeLiteral(IntLiteral(start), IntLiteral(stop), IntLiteral(increment)))
     
+
     def parse_array_declaration(self):
         elements = []
         name = self.current_token().value.value
@@ -167,9 +170,10 @@ class Parser:
                 self.next_token()
 
         self.expect(TokenType.RIGHT_BRACKET)
-        print(repr(VariableDeclaration(arraytype, Identifier(name), ArrayLiteral(typ, size, elements))))
+        # print(repr(VariableDeclaration(arraytype, Identifier(name), ArrayLiteral(typ, size, elements))))
         return VariableDeclaration(arraytype, Identifier(name), ArrayLiteral(typ, size, elements))
     
+
     def parse_vector_declaration(self):
         elements = []
         name = self.current_token().value.value
@@ -191,9 +195,10 @@ class Parser:
                 self.next_token()
 
         self.expect(TokenType.RIGHT_BRACKET)
-        print(repr(VariableDeclaration(arraytype, Identifier(name), VectorLiteral(typ, elements))))
+        # print(repr(VariableDeclaration(arraytype, Identifier(name), VectorLiteral(typ, elements))))
         return VariableDeclaration(arraytype, Identifier(name), VectorLiteral(typ, elements))
         
+
     def parse_identifier(self):
         # add more scope here
         cur = self.current_token()
@@ -212,10 +217,10 @@ class Parser:
                 self.next_token()
                 new_value = self.parse_expression()
                 if isinstance(new_value, Identifier):
-                    print(repr(BinaryOperation(name, operator, Identifier(new_value))))
+                    # print(repr(BinaryOperation(name, operator, Identifier(new_value))))
                     return BinaryOperation(name, operator, Identifier(new_value))
 
-                print(repr(BinaryOperation(Identifier(name), operator, new_value)))
+                # print(repr(BinaryOperation(Identifier(name), operator, new_value)))
                 return BinaryOperation(Identifier(name), operator, new_value)
             
             # array/list/vector accesses
@@ -237,7 +242,7 @@ class Parser:
                 self.next_token()
                 operator = next_token.type
                 self.next_token()
-                print(repr(UnaryOperation(Identifier(name), operator)))
+                # print(repr(UnaryOperation(Identifier(name), operator)))
                 return UnaryOperation(Identifier(name), operator)
             
             elif next_token.type == TokenType.ASSIGN:
@@ -250,31 +255,58 @@ class Parser:
                 right = self.parse_expression()
                 var_type = self.scope.get_variable_type(name)
                 
-                print(repr(VariableDeclaration(var_type, Identifier(name), right)))
+                # print(repr(VariableDeclaration(var_type, Identifier(name), right)))
                 return VariableDeclaration(var_type, Identifier(name), right)
             
             elif next_token.type == TokenType.PERIOD:
-                parent = self.current_token()
-                self.next_token()
-                self.next_token()
-                method = self.current_token().value
-                self.next_token()
-                self.expect(TokenType.LEFT_PAREN)
+                # Instead of using the raw token, wrap it as an Identifier
+                parent = Identifier(self.current_token().value)
+                self.next_token()  # Consume the token for the parent
+                self.next_token()  # Skip the PERIOD
+                property_or_method = self.current_token().value
+                self.next_token()  # Consume the method/field name
 
-                arguments = []
-                while self.current_token().type != TokenType.RIGHT_PAREN:
-                    if not self.current_token().type == TokenType.RIGHT_PAREN:
+                if self.current_token().type == TokenType.LEFT_PAREN:
+                    self.expect(TokenType.LEFT_PAREN)
+                    arguments = []
+                    while self.current_token().type != TokenType.RIGHT_PAREN:
                         if self.current_token().type == TokenType.COMMA:
                             self.next_token()
                         arguments.append(self.parse_expression())
-                    else:
-                        break
-                    
+                    self.expect(TokenType.RIGHT_PAREN)
+                    # print(repr(MethodCall(parent, property_or_method, arguments)))
+                    return MethodCall(parent, property_or_method, arguments)
 
-                self.expect(TokenType.RIGHT_PAREN)
+                elif self.current_token().type == TokenType.ASSIGN:
+                    self.next_token()
+                    value = self.parse_expression()
+                    # print(repr(FieldAssignment(parent, property_or_method, value)))
+                    return FieldAssignment(parent, property_or_method, value)
 
-                print(repr(MethodCall(parent, method, arguments)))
-                return MethodCall(parent, method, arguments)
+                else:
+                    # print(repr(FieldAccess(parent, property_or_method)))
+                    return FieldAccess(parent, property_or_method)
+            
+            # wip... make class instantiation work
+            elif next_token.type == TokenType.IDENTIFIER:
+                typ = self.expect(TokenType.IDENTIFIER)
+                name = self.expect(TokenType.IDENTIFIER)
+                self.expect(TokenType.ASSIGN)
+                self.expect(TokenType.NEW)
+                self.expect(TokenType.IDENTIFIER)
+                arguments = []
+
+                if self.current_token().type == TokenType.LEFT_PAREN:
+                    self.expect(TokenType.LEFT_PAREN)
+
+                    while self.current_token().type != TokenType.RIGHT_PAREN:
+                        arguments.append(self.parse_expression())
+                        if self.current_token().type == TokenType.COMMA:
+                            self.next_token()
+
+                    self.expect(TokenType.RIGHT_PAREN)
+
+                return ClassInstantiation(typ, name, arguments)
 
             elif next_token.type == TokenType.LEFT_PAREN:
                 self.next_token()
@@ -283,12 +315,13 @@ class Parser:
             elif next_token.type == TokenType.LEFT_BRACKET:
                 self.next_token()
                 # why is this here
-                
+      
         # if no operator follows assume variable reference
         self.next_token()
-        print(repr(Identifier(name)))
+        # print(repr(Identifier(name)))
         return Identifier(name)
     
+
     def parse_function_call(self, name):
         self.expect(TokenType.LEFT_PAREN)
         arguments = []
@@ -302,22 +335,82 @@ class Parser:
         self.expect(TokenType.RIGHT_PAREN) 
         return FunctionCall(name, arguments)
 
+
     def parse_import(self):
         import_token = self.expect(TokenType.IMPORT)
+        alias = import_token.value.value
         if not isinstance(import_token.value, Token) or import_token.value.type != TokenType.IDENTIFIER:
             raise SyntaxError(f"Invalid import statement: Expected an identifier, found {import_token.value}")
         
-        # if self.next_token().type == TokenType.AS:
-            # add that here
-            # pass
+        print(self.current_token().type)
+        if self.current_token().type == TokenType.AS:
+            alias = self.current_token().value.value
+            self.next_token()
 
         module = import_token.value.value
         if self.scope.is_imported(module):
             raise SyntaxError(f"Variable '{module}' already declared in this scope.")
 
-        self.scope.declare_import(module)
-        print(repr(Import(module)))
-        return Import(module)
+        self.scope.declare_import(module, alias)
+        # print(repr(Import(module)))
+        return Import(module, alias)
+
+    def parse_class_declaration(self):
+        # initialize all of this shit at the top
+        extends, children, fields, methods, body = [], [], [], [], []
+
+        name = self.current_token().value
+        if self.scope.is_declared(name):
+            raise SyntaxError(f"Class '{name}' already declared in this scope.")
+        
+        self.scope.declare_variable(name, TokenType.CLASS)
+        self.next_token()
+
+        # check if next token is an extends token, and get the class inside that
+        if self.current_token().type == TokenType.EXTENDS:
+            extends.append(self.current_token().value)
+            self.next_token()
+
+        # expect opening brace
+        self.expect(TokenType.LEFT_BRACE)
+        
+        # enter a new scope for the class body.
+        self.scope.enter_scope()
+        
+        # process class body until we hit RIGHT_BRACE.
+        while self.current_token().type != TokenType.RIGHT_BRACE:
+            while self.current_token().type == TokenType.EOL:
+                self.next_token()
+
+            if self.current_token().type == TokenType.RIGHT_BRACE:
+                break
+
+            # parse class members: fields, methods, inner classes, or statements.
+            if self.current_token().type in [TokenType.INTEGER, TokenType.BOOLEAN, TokenType.STR, 
+                                            TokenType.LIST, TokenType.VECTOR, TokenType.SET, TokenType.TUPLE]:
+                fields.append(self.parse_variable_declaration())
+
+            elif self.current_token().type == TokenType.FUNCTION:
+                methods.append(self.parse_function())
+
+            elif self.current_token().type == TokenType.CLASS:
+                child = self.parse_class_declaration()
+                children.append(child)
+
+            else:
+                body.append(self.parse_statement())
+
+        # exit class scope.
+        self.scope.exit_scope()
+        self.expect(TokenType.RIGHT_BRACE)
+        
+        # print(repr(VariableDeclaration(TokenType.CLASS, name, 
+        #    ClassLiteral(extends, children, fields, methods, body))))
+        return VariableDeclaration(
+            TokenType.CLASS, name, 
+            ClassLiteral(extends, children, fields, methods, body)
+        )
+
 
     def parse_function(self):
         name = self.expect(TokenType.FUNCTION).value
@@ -342,55 +435,8 @@ class Parser:
 
         body = self.parse_block()  # use the block parser
         return Function(name, parameters, return_type, body)
-
     
-    def parse_class_declaration(self):
-        name = self.current_token().value
-        if self.scope.is_declared(name):
-            raise SyntaxError(f"Class '{name}' already declared in this scope.")
-        
-        self.scope.declare_variable(name, TokenType.CLASS)
-        self.next_token()
-        self.expect(TokenType.LEFT_BRACE)
-        
-        # Enter a new scope for the class body.
-        self.scope.enter_scope()
-        
-        children, fields, methods, body = [], [], [], []
-        
-        # Process the class body until we hit the RIGHT_BRACE.
-        while self.current_token().type != TokenType.RIGHT_BRACE:
-            # Skip any EOL tokens.
-            while self.current_token().type == TokenType.EOL:
-                self.next_token()
-            # If after skipping EOL tokens we see the RIGHT_BRACE, break.
-            if self.current_token().type == TokenType.RIGHT_BRACE:
-                break
 
-            # Parse class members: fields, methods, inner classes, or statements.
-            if self.current_token().type in [TokenType.INTEGER, TokenType.BOOLEAN, TokenType.STR, 
-                                            TokenType.LIST, TokenType.VECTOR, TokenType.SET, TokenType.TUPLE]:
-                fields.append(self.parse_variable_declaration())
-            elif self.current_token().type == TokenType.FUNCTION:
-                methods.append(self.parse_function())
-            elif self.current_token().type == TokenType.CLASS:
-                child = self.parse_class_declaration()
-                # Optionally, you could set the parent on the child here.
-                children.append(child)
-            else:
-                body.append(self.parse_statement())
-        
-        # Exit the class body scope.
-        self.scope.exit_scope()
-        self.expect(TokenType.RIGHT_BRACE)
-        
-        print(repr(VariableDeclaration(TokenType.CLASS, name, 
-            ClassLiteral([], children, fields, methods, body))))
-        return VariableDeclaration(
-            TokenType.CLASS, name, 
-            ClassLiteral([], children, fields, methods, body)
-        )
-    
     # actually implement scope on this later, for right now just do this
     def parse_global_declaration(self):
         self.expect(TokenType.GLOBAL)
@@ -402,13 +448,12 @@ class Parser:
         else:
             raise SyntaxError("Expected a type declaration after the 'global' keyword.")
 
+
     def parse_expression(self):
-        """
-        Parse an expression that spans tokens until the end of the line.
-        Handles literals, identifiers, binary operations, and logical operations.
-        """
+        # the big boy, parses almost every expression, pretty much as hot as the main function
+        # handles literals, identifiers, binary operations, and logical operations. so literally everything
         def parse_primary():
-            """Parse a primary token like a number, string, or identifier."""
+            # for the primary token, like a number, string, or identifier.
             token = self.current_token()
             if token.type == TokenType.NUMBER:
                 self.next_token()
@@ -442,13 +487,13 @@ class Parser:
             else:
                 raise SyntaxError(f"Unexpected token in expression: {token.type}")
 
+
         def parse_binary(left, precedence=0):
             while True:
                 operator = self.current_token().type
                 if operator in [TokenType.EOL, TokenType.SEMICOLON, None]:
                     return left
 
-                # Determine the current operator's precedence.
                 if operator in [TokenType.ADD, TokenType.SUBTRACT]:
                     current_precedence = 10
                 elif operator in [TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.FLOOR_DIVIDE, TokenType.MODULUS]:
@@ -470,7 +515,6 @@ class Parser:
                 self.next_token()
                 right = parse_primary()
 
-                # Updated inner loop: also consider equality, AND, OR in the next operator.
                 while self.current_token().type not in [TokenType.EOL, TokenType.SEMICOLON, None]:
                     next_operator = self.current_token().type
                     if next_operator in [TokenType.ADD, TokenType.SUBTRACT]:
@@ -498,6 +542,7 @@ class Parser:
 
         primary = parse_primary()
         return parse_binary(primary, precedence=0)
+
 
     def parse_if_statement(self):
         self.expect(TokenType.IF)
@@ -529,7 +574,6 @@ class Parser:
         return IfStatement(condition, if_body, else_body)
 
 
-
     def parse_for_loop(self):
         self.expect(TokenType.FOR)
         self.expect(TokenType.LEFT_PAREN)
@@ -551,8 +595,9 @@ class Parser:
         self.expect(TokenType.RIGHT_BRACE)
 
         self.scope.exit_scope()
-        print(repr(ForLoop(initializer, condition, increment, body)))
+        # print(repr(ForLoop(initializer, condition, increment, body)))
         return ForLoop(initializer, condition, increment, body)
+
 
     def parse_while_loop(self):
         self.expect(TokenType.WHILE)
@@ -564,8 +609,9 @@ class Parser:
             body.append(self.parse_statement())
             self.next_token()
         self.expect(TokenType.RIGHT_BRACE)
-        print(repr(WhileLoop(condition, body)))
+        # print(repr(WhileLoop(condition, body)))
         return WhileLoop(condition, body)
+
 
     def parse_do_while_loop(self):
         self.expect(TokenType.DO)
@@ -579,8 +625,9 @@ class Parser:
         self.expect(TokenType.LEFT_PAREN)
         condition = self.parse_expression()
         self.expect(TokenType.RIGHT_PAREN)
-        print(repr(DoWhileLoop(body, condition)))
+        # print(repr(DoWhileLoop(body, condition)))
         return DoWhileLoop(body, condition)
+
 
     def parse_list_literal(self):
         elements = []
@@ -593,8 +640,9 @@ class Parser:
                 self.next_token()
 
         self.expect(TokenType.RIGHT_BRACKET)
-        print(repr(ListLiteral(elements)))
+        # print(repr(ListLiteral(elements)))
         return ListLiteral(elements)
+
 
     def parse_return_statement(self):
         self.expect(TokenType.RETURN)
@@ -609,5 +657,5 @@ class Parser:
         if self.current_token().type in (TokenType.SEMICOLON, TokenType.EOL):
             self.next_token()
         
-        print(repr(ReturnStatement(values)))
+        # print(repr(ReturnStatement(values)))
         return ReturnStatement(values)

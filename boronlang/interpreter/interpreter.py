@@ -1,5 +1,5 @@
 # tokentype from my lexer and all ASTNodes from parser
-from lexer.lexer import TokenType
+from lexer.lexer import TokenType, Token
 from parsing.astnodes import *
 
 # decimal import for better precision, fuck floats no floats in my language
@@ -44,6 +44,10 @@ class Interpreter:
                 self.evaluate(node.stop),
                 self.evaluate(node.increment)
             ),
+            ClassLiteral: self.evaluate_class_literal,
+            ClassInstantiation: self.evaluate_class_instantiation,
+            FieldAssignment: self.evaluate_field_assignment,
+            FieldAccess: self.evaluate_field_access,
             MethodCall: self.evaluate_method_call,
             IndexAccess: self.evaluate_index_access,
             IndexAssignment: self.evaluate_index_assignment,
@@ -65,9 +69,9 @@ class Interpreter:
             except KeyboardInterrupt:
                 print("[red]KeyboardInterrupt[/red]")
 
-        # enforces type against the following for right now: integer, decimal, boolean, string, array (WIP)
+    # enforces type against the following for right now: integer, decimal, boolean, string, array (WIP)
     def enforce_type(self, expected_type, value):
-        # Ensure integers are whole numbers
+        # ensure integers are whole numbers
         if expected_type is TokenType.INTEGER:
             if isinstance(value, Decimal):
                 if value % 1 != 0:
@@ -77,19 +81,19 @@ class Interpreter:
                 return value
             raise ValueError("Expected integer, got {} with value {}.".format(type(value), value))
 
-        # Ensure decimals are stored as Decimal
+        # ensure decimals are stored as Decimal
         elif expected_type is TokenType.DECIMAL:
             if isinstance(value, (Decimal, int)):
                 return Decimal(value)
             raise ValueError("Expected decimal, got {} with value {}.".format(type(value), value))
 
-        # Ensure booleans are actual booleans
+        # ensure booleans are actual booleans
         elif expected_type is TokenType.BOOLEAN:
             if isinstance(value, bool):
                 return value
             raise ValueError("Expected boolean, got {} with value {}.".format(type(value), value))
 
-        # Ensure strings are proper string literals
+        # ensure strings are proper string literals
         elif expected_type is TokenType.STR:
             if isinstance(value, str):
                 return value
@@ -111,6 +115,7 @@ class Interpreter:
         spec = importlib.util.spec_from_file_location(module_name, package_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        module_name = node.alias
 
         # add to global scope
         self.global_scope[module_name] = module
@@ -359,27 +364,147 @@ class Interpreter:
             self.enforce_type(node.type, element)
 
         return elements
+
+    def evaluate_class_literal(self, node):
+        if node.parent:
+            parent_class = self.evaluate(node.parent)
+            node.env = dict(getattr(parent_class, 'env', {}))
+        else:
+            node.env = {}
+
+        for field in node.fields:
+            node.env[field.name] = None
+
+        for method in node.methods:
+            node.env[method.name.value] = method
+
+        for stmt in node.body:
+            self.evaluate(stmt)
+
+        return node
+
+    def evaluate_class_instantiation(self, node):
+        typ = node.typ.value
+        name = node.name.value
+        if typ not in self.global_scope:
+            raise NameError(f"Class '{typ}' not defined.")
+        
+        class_literal = self.global_scope[typ]
+        instance = {
+            '__class__': class_literal,
+            'fields': dict(class_literal.env)
+        }
+        evaluated_args = [self.evaluate(arg) for arg in node.arguments]
+        
+        # if an initializer (__init__) is defined in the class, call it.
+        if '__init__' in class_literal.env:
+            init_method = class_literal.env['__init__']
+            local_scope = {}
+            local_scope[init_method.parameters[0].name] = instance
+
+            for param, arg in zip(init_method.parameters[1:], evaluated_args):
+                local_scope[param.name] = arg
+
+            previous_scope = self.global_scope.copy()
+            self.global_scope.update(local_scope)
+            
+            try:
+                for stmt in init_method.body:
+                    self.evaluate(stmt)
+            except ReturnException as ret:
+                pass
+            self.global_scope = previous_scope
+
+        self.global_scope[name] = instance
+        return instance
+
+    def evaluate_field_assignment(self, node):
+        # Check if the parent is a Token; if so, handle it as an identifier.
+        if isinstance(node.parent, Token):
+            key = node.parent.value
+            if key not in self.global_scope:
+                raise ValueError(f"'{key}' is not defined.")
+            instance = self.global_scope[key]
+        else:
+            instance = self.evaluate(node.parent)
+        
+        new_value = self.evaluate(node.value)
+        
+        # Extract the field name from the assignment.
+        field_name = node.field.value if hasattr(node.field, "value") else node.field
+        
+        # Ensure the instance is a valid object (in our design, a dict with a 'fields' key).
+        if not (isinstance(instance, dict) and "fields" in instance):
+            raise TypeError("Field assignment target is not a valid instance.")
+        
+        instance["fields"][field_name] = new_value
+        return new_value
+
+    def evaluate_field_access(self, node):
+        # Evaluate the parent node to get the instance.
+        instance = self.evaluate(node.parent)
+        # Ensure the instance is a valid object (in our design, a dict with a 'fields' key).
+        if not (isinstance(instance, dict) and 'fields' in instance):
+            raise TypeError("Field access target is not a valid instance.")
+        
+        # Determine the field name.
+        if hasattr(node.field, 'name'):
+            field_name = node.field.name  # For Identifier nodes.
+        else:
+            field_name = node.field  # For tokens.
+        
+        # Return the field's value, or None if not found.
+        return instance['fields'].get(field_name, None)
     
     def evaluate_method_call(self, node):
-        if hasattr(node.parent, "value"):
-            package_name = node.parent.value
-        elif hasattr(node.parent, "name"):
-            package_name = node.parent.name
+        parent_obj = self.evaluate(node.parent)
+        method_name = node.name.value if hasattr(node.name, "value") else node.name
+
+        if isinstance(parent_obj, dict) and '__class__' in parent_obj:
+            class_obj = parent_obj['__class__']
+            if method_name not in class_obj.env:
+                raise AttributeError(f"Class '{class_obj}' does not have a method '{method_name}'.")
+            method_node = class_obj.env[method_name]
+            evaluated_args = [self.evaluate(arg) for arg in node.parameters]
+
+            local_scope = {}
+            local_scope[method_node.parameters[0].name] = parent_obj
+
+            for param, arg in zip(method_node.parameters[1:], evaluated_args):
+                local_scope[param.name] = arg
+
+            previous_scope = self.global_scope.copy()
+            self.global_scope.update(local_scope)
+            
+            result = None
+            try:
+                for stmt in method_node.body:
+                    result = self.evaluate(stmt)
+            except ReturnException as ret:
+                result = ret.value
+
+            self.global_scope = previous_scope
+            return result
+        
         else:
-            raise ValueError("Invalid package identifier in MethodCall.")
+            if hasattr(node.parent, "value"):
+                package_name = node.parent.value
+            elif hasattr(node.parent, "name"):
+                package_name = node.parent.name
+            else:
+                raise ValueError("Invalid package identifier in MethodCall.")
 
-        try:
-            package_obj = self.global_scope[package_name]
-        except KeyError:
-            raise KeyError(f"Package: {package_name} not found in global scope")
+            try:
+                package_obj = self.global_scope[package_name]
+            except KeyError:
+                raise KeyError(f"Package: {package_name} not found in global scope")
 
-        method_name = node.name
-        method_func = getattr(package_obj, method_name, None)
-        if method_func is None:
-            raise AttributeError(f"Package '{package_name}' does not have a method '{method_name}'.")
-
-        args = [self.evaluate(arg) for arg in node.parameters]
-        return method_func(*args)
+            method_func = getattr(package_obj, method_name, None)
+            if method_func is None:
+                raise AttributeError(f"Package '{package_name}' does not have a method '{method_name}'.")
+            
+            args = [self.evaluate(arg) for arg in node.parameters]
+            return method_func(*args)
     
     def evaluate_index_access(self, node):
         container = self.evaluate(node.container)

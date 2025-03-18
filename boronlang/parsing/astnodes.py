@@ -12,11 +12,12 @@ class Program(ASTNode):
 
 # import node
 class Import(ASTNode):
-    def __init__(self, module):
+    def __init__(self, module, alias):
         self.module = module
+        self.alias = alias
 
     def __repr__(self):
-        return f'''Import({self.module})'''
+        return f'''Import({self.module}, {self.alias})'''
     
 # function/method nodes
 # lines 23-56
@@ -205,12 +206,13 @@ class ClassLiteral(ASTNode):
         self.parent = parent
         self.sub = sub
         self.fields = fields
-        self.methods = methods  # tags methods
-        self.body = body
+        self.methods = methods
+        self.body = body  # might remove
 
     def __repr__(self):
         return f'ClassLiteral({self.parent}, {self.sub}, {self.fields}, {self.methods}, {self.body}'
 
+# index related nodes
 class IndexAccess:
     def __init__(self, container, index):
         self.container = container
@@ -227,6 +229,33 @@ class IndexAssignment:
 
     def __repr__(self):
         return f"IndexAssignment({repr(self.container)}, {repr(self.index)}, {repr(self.value)})"
+
+# instancing related nodes
+class ClassInstantiation(ASTNode):
+    def __init__(self, typ, name, arguments):
+        self.typ = typ
+        self.name = name
+        self.arguments = arguments
+
+    def __repr__(self):
+        return f"ClassInstantiation({self.typ}, {self.name}, {self.arguments})"
+
+class FieldAccess(ASTNode):
+    def __init__(self, parent, field):
+        self.parent = parent
+        self.field = field
+
+    def __repr__(self):
+        return f'FieldAccess({self.parent}, {self.field})'
+
+class FieldAssignment(ASTNode):
+    def __init__(self, parent, field, value):
+        self.parent = parent
+        self.field = field
+        self.value = value
+
+    def __repr__(self):
+        return f'FieldAssignment({self.parent}, {self.field}, {self.value})'
 
 # return nodes
 class ReturnStatement(ASTNode):

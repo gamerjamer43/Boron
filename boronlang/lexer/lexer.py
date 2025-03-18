@@ -29,6 +29,8 @@ class TokenType(Enum):
     FUNCTION = ("fn", r'\bfn\b')
     GLOBAL = ("global", r'\bglobal\b')
     RETURN = ("->", r'->')
+    EXTENDS = ("extends", r"\bextends\b")
+    NEW = ("new", r"\bnew\b")
     IF = ("if", r'\bif\b')
     ELSE_IF = ("else if", r'\belse if\b')
     ELSE = ("else", r'\belse\b')
@@ -188,7 +190,8 @@ class Lexer:
                         continue
                 
                 # if static type definition
-                if tok_type in [TokenType.FUNCTION, TokenType.INTEGER, TokenType.DEC, TokenType.BOOLEAN, TokenType.STR, TokenType.IMPORT, TokenType.AS, TokenType.TUPLE, TokenType.SET, TokenType.ARRAY, TokenType.LIST, TokenType.VECTOR, TokenType.RANGE, TokenType.CLASS]:
+                if tok_type in [TokenType.FUNCTION, TokenType.INTEGER, TokenType.DEC, TokenType.BOOLEAN, TokenType.STR, TokenType.IMPORT, TokenType.AS, TokenType.TUPLE, 
+                                TokenType.SET, TokenType.ARRAY, TokenType.LIST, TokenType.VECTOR, TokenType.RANGE, TokenType.CLASS, TokenType.EXTENDS, TokenType.AS]:
                     # get token after that
                     line = line[mo.end():].lstrip()
                     mo_identifier = get_token(line)

@@ -14,22 +14,22 @@ def assemble(filename, args) -> None:
         start = time()
         tokens = Lexer(code).tokenize()
         end = time()
-        print(f"Tokenization completed in {(end - start) * 1000:.3f} ms\n") # print in ms
+        # print(f"Tokenization completed in {(end - start) * 1000:.3f} ms\n") # print in ms
 
         # print tokens
-        print("\nTokens:")
-        for token in tokens:
-            print(token)
+        # print("\nTokens:")
+        # for token in tokens:
+        #    print(token)
 
         # parsing time
         start = time()
         ast = Parser(tokens).parse()
         end_parse = time() # we have to use this one a minute later fuck
-        print(f"\nParsing completed in {(end_parse - start) * 1000:.3f} ms") # print in ms
+        # print(f"\nParsing completed in {(end_parse - start) * 1000:.3f} ms") # print in ms
 
         # print AST
-        print("\nAST:")
-        print(str(ast) + "\n")
+        # print("\nAST:")
+        # print(str(ast) + "\n")
 
         # interpretation timing
         start = time()
@@ -37,8 +37,8 @@ def assemble(filename, args) -> None:
         end = time()
 
         # execution delay and time in milliseconds
-        print(f"\nExecution delay: {(start - end_parse) * 1000:.3f} ms")
-        print(f"Execution completed in {(end - start) * 1000:.3f} ms\n")
+        # print(f"\nExecution delay: {(start - end_parse) * 1000:.3f} ms")
+        # print(f"Execution completed in {(end - start) * 1000:.3f} ms\n")
 
         if args:
             print(args)

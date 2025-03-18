@@ -1,6 +1,6 @@
 class Scope:
     def __init__(self):
-        self.imports = []
+        self.imports = {}
         self.scopes = [{}]
 
     def enter_scope(self):
@@ -17,10 +17,10 @@ class Scope:
             raise SyntaxError(f"Variable '{name}' already declared in this scope.")
         self.scopes[-1][name] = var_type
     
-    def declare_import(self, name):
+    def declare_import(self, name, alias):
         if name in self.imports:
             raise SyntaxError(f"Import '{name}' already imported.")
-        self.imports.append(name)
+        self.imports[name] = alias
     
     def is_declared(self, name):
         return any(name in scope for scope in reversed(self.scopes))
