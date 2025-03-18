@@ -53,6 +53,13 @@ def toBool(string: str) -> bool:
         print("[red]StringError\n", f"The string\n'{string}\ncannot validly be converted to an boolean. Possibly not a boolean value, or contains other characters?'[/red]")
         exit(0)
 
+#! system operations
+def _exit(code: int) -> None:
+    exit(code)
+
+def _isinstance(obj: object, info: object) -> bool:
+    return isinstance(obj, info)
+
 BUILTINS = {
     "inp": inp,
     "out": out,
@@ -63,5 +70,7 @@ BUILTINS = {
     "toInt": toInt,
     "toStr": toStr,
     "toDec": toDec,
-    "toBool": toBool
+    "toBool": toBool,
+    "exit": _exit,
+    "isinstance": _isinstance
 }

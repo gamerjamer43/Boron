@@ -14,6 +14,7 @@ The goal of this language is to be a simple introduction to programming that sli
    - [Expressions and Operators](#expressions-and-operators)
    - [Control Structures](#control-structures)
    - [Functions and Returns](#functions-and-returns)
+   - [Classes](#classes)
    - [Packages and Imports](#packages-and-imports)
 3. [Example Program](#example-program)
 4. [Future Enhancements](#future-enhancements)
@@ -50,7 +51,7 @@ That simple! Literally grab, and go!
   ```
 
 - **Line Breaks and Semicolons:**  
-  Newlines (EOL) and semicolons can be used to separate statements.
+  Newlines (EOL) can be used to separate statements. Will be adding semicolon soon but it's unnecessary for right now.
 
 ---
 
@@ -65,10 +66,23 @@ Boron enforces types at compile time. The primary built-in types are:
 - **Boolean:** `true` or `false`  
 - **String:** Text enclosed in double quotes  
   Example: `"Hello, World!"`
-- **List:** Ordered collection of elements  
+- **List:** Ordered collection of elements, untyped
   Example: `[1, 2, 3]`
 - **Array:** Fixed‑size, typed collection  
+- **Vector** Unlimited-size, typed collection
 - **Range:** A range defined by a start, stop, and increment
+
+**Example:**
+```
+int myInt = 42
+dec myDec = 3.14
+bool myBool = true
+str myStr = "Hello, World!"
+list myList = [1, 2, 3]
+array myArray[int][5] = [1, 2, 3, 4, 5]
+vec myVec[int] = [2, 3, 4]
+range myRange = (1, 9, 1)
+```
 
 ---
 
@@ -98,9 +112,16 @@ str myStr = "Hello, World!"
   array myArray[int][5] = [1, 2, 3, 4, 5]
   ```
 
+- **Vector Declaration:**  
+  Specify the element type:
+  
+  ```
+  vec myVec[int] = [1, 2, 3, 4, 5]
+  ```
+
 - **Range Declaration:**  
   Create a range for use in loops:
-  
+
   ```
   range myRange = (1, 9, 1)  #! Defines a range from 1 to 8
   ```
@@ -128,17 +149,23 @@ Boron supports standard arithmetic, comparison, logical, and compound assignment
   myInt < 10
   myInt == 42
   myInt != 42
+  true and true
+  true or false
   ```
 
 - **Logical Operators:**  
   ```
-  bool result = (myInt > 10) and (myBool == true)
+  bool result = (myInt > 10) or (myBool == true)
+  bool result = (myInt > 10) and (myInt < 20)
   ```
 
 - **Compound Assignments:**  
   ```
-  myInt += 1   # Increments myInt by 1
-  myInt -= 2   # Decrements myInt by 2
+  myInt++      #! increments myInt by 1
+  myInt += 5   #! increments myInt by 5
+  myInt -= 2   #! decrements myInt by 2
+  myInt *= 3   #! compound multiplies myint by 3
+  myInt /= 4   #! compound divides myint by 4
   ```
 
 ---
@@ -192,17 +219,46 @@ do {
 ```
 fn myFunction(int arg1, int arg2) -> bool {
     if arg1 == arg2 {
-        -> true   #! Returns true if the arguments are equal
+        -> true   #! returns true if the arguments are equal
     }
-    -> false      #! Otherwise returns false
+    -> false      #! otherwise returns false
 }
 ```
 
 Function calls look like this:
   
 ```
-out(myFunction(1, 1))  #! Expected to output true
-out(myFunction(1, 2))  #! Expected to output false
+out(myFunction(1, 1))  #! expected to print true
+out(myFunction(1, 2))  #! expected to print false
+```
+
+---
+
+### Classes
+
+Classes are another thing that are simple and fun, to use them just create their fields and methods
+```
+class Integer {
+    int number
+
+    fn __init__ (class self, int this) -> {
+        self.number = this
+    }
+
+    fn add (class self, int that) -> dec {
+        -> self.number + that
+    }
+}
+```
+
+To create an instance of a class, just create a new object of it
+```
+Integer mine = new Integer(1)
+```
+
+Then you can operate on it!
+```
+out("Number: " + toStr(mine.number) + ", Add 2: " + toStr(mine.add(2)))
 ```
 
 ---
@@ -221,62 +277,82 @@ Math.sin(0.5)
 
 ---
 
-## Example Program
+## Example Programs
 
+**FizzBuzz:**
 ```
-#! import a package
-import Math
-
-#! data type declarations
-int myInt = 42
-dec myDec = 3.14
-bool myBool = true
-str myStr = "Hello, World!"
-list myList = [1, 2, 3]
-array myArray[int][5] = [1, 2, 3, 4, 5]
-range myRange = (1, 9, 1)
-
-#! output examples
-out(myArray[0])
-out(myList[0])
-
-#! function with early return
-fn myFunction(int arg1, int arg2) -> bool {
-    if arg1 == arg2 {
-        -> true
+#! define fizzbuzz function
+fn fizzbuzz(int numinput) -> str {
+    if numinput % 5 == 0 and numinput % 3 == 0 {
+        -> "FizzBuzz"
+    } else if numinput % 3 == 0 {
+        -> "Fizz"
+    } else if numinput % 5 == 0 {
+        -> "Buzz"
+    } else {
+        -> numinput
     }
-    -> false
 }
 
-out(myFunction(1, 1))  #! Should print true
-out(myFunction(1, 2))  #! Should print false
+#! while true
+while true {
+    int numinput = toInt(inp("> ")) #! take input, convert to int
+    str fb = toStr(fizzbuzz(numinput)) #! run it thru fizzbuzz function
+    out(fb) #! print
+}
+```
 
-#! for loop example
-for (int i = 0; i < 5; i++) {
-    out(myArray[i])
+**Quicksort:**
+```
+#import Random
+
+fn quicksort(list arr) -> list {
+    if length(arr) <= 1 {  
+        -> arr
+    }
+
+    int pivot = arr[length(arr) // 2]
+    list left = []
+    list right = []
+    list equal = []
+
+    for (int i = 0; i < length(arr); i += 1) {
+        int value = arr[i]
+        if value < pivot {
+            left += [value]
+        } else if value > pivot {
+            right += [value]
+        } else {
+            equal += [value]
+        }
+    }
+
+    -> quicksort(left) + equal + quicksort(right)
 }
 
-#! while loop example
-bool flag = true
-while flag {
-    out("Looping in while...")
-    flag = false
+list sample_list = Random.fill(21, 10000)
+list sorted_list = quicksort(sample_list)
+out("Sorted array: " + toStr(sorted_list))
+```
+
+**Factorial:**
+```
+fn factorial(int n) -> int {
+    if n <= 1 {
+        -> 1
+    }
+    -> n * factorial(n - 1)
 }
 
-#! do-while loop example
-int i = 2
-do {
-    out("In do-while loop!")
-    i--
-} while (i > 0)
+int num = 100
+out("Factorial of " + toStr(num) + " is " + toStr(factorial(num)))
 ```
 
 ---
 
 ## Future Enhancements
 
-- **Additional Data Types:** Support for vectors (`vec`), tuples, and sets is planned.
-- **Object Orientation:** Yeah, I don't know how I don't have this added, classes however are broken.
+- **Additional Data Types:** Support dictionaries, tuples and sets is planned.
 - **Enhanced Scoping:** Better support for closures and nested functions.
 - **Improved Error Handling:** More descriptive syntax and type error messages.
 - **Other shit:** I have no clue what else to add here. A lot more to come.
