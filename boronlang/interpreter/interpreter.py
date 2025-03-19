@@ -51,6 +51,7 @@ class Interpreter:
             MethodCall: self.evaluate_method_call,
             IndexAccess: self.evaluate_index_access,
             IndexAssignment: self.evaluate_index_assignment,
+            NoneObject: lambda node: None,
             EndOfFile: lambda node: None,
         }
 
@@ -336,7 +337,7 @@ class Interpreter:
 
     def evaluate_identifier(self, node):
         if node.name not in self.global_scope:
-            raise ValueError(f"'{node.name}' is not defined.")
+            raise ValueError(f"'{node.name}' is not defined or has not been imported. Did you forget to import a library or create a class?")
         return self.global_scope[node.name]
 
     def evaluate_array_literal(self, node):
@@ -509,7 +510,7 @@ class Interpreter:
     def evaluate_index_access(self, node):
         container = self.evaluate(node.container)
         index = self.evaluate(node.index)
-        if not isinstance(container, list):
+        if not isinstance(container, list) and not isinstance(container, str):
             raise TypeError("Index access is only supported on lists or arrays.")
         try:
             return container[index]

@@ -132,7 +132,7 @@ class DoWhileLoop(ASTNode):
         return f'DoWhileLoop({self.body}, {self.condition})'
 
 # literals
-# lines 135-220
+# lines 135-217
 class Identifier(ASTNode):
     def __init__(self, name):
         self.name = name
@@ -211,6 +211,13 @@ class ClassLiteral(ASTNode):
 
     def __repr__(self):
         return f'ClassLiteral({self.parent}, {self.sub}, {self.fields}, {self.methods}, {self.body}'
+
+class NoneObject(ASTNode):
+    def __init__(self):
+        self.value = "None"
+    
+    def __repr__(self):
+        return f'NoneObject({self.value})'
 
 # index related nodes
 class IndexAccess:

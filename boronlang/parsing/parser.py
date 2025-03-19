@@ -9,9 +9,13 @@ from parsing.astnodes import BinaryOperation, LogicalOperation, UnaryOperation, 
 # control flow nodes
 from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop
 # variable nodes
-from parsing.astnodes import VariableDeclaration, Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, VectorLiteral
+from parsing.astnodes import VariableDeclaration, Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, VectorLiteral, NoneObject
 # scope
 from parsing.scope import Scope
+
+#! disable or enable repr
+global reprenabled 
+reprenabled = False
 
 # parser
 class Parser:
@@ -41,9 +45,11 @@ class Parser:
         return token
 
     def parse(self):
+        if reprenabled == True: print("REPR: ")
         program = Program()
         while self.current_token().type != TokenType.EOF:
             program.statements.append(self.parse_statement())
+        if reprenabled == True: print()
         return program
 
     def parse_statement(self):
@@ -84,6 +90,8 @@ class Parser:
     
     # wip, hopefully this should parse blocks correctly
     def parse_block(self):
+        while self.current_token().type == TokenType.EOL:
+            self.next_token()
         self.expect(TokenType.LEFT_BRACE)
         statements = []
         # skip any initial EOLs.
@@ -120,7 +128,7 @@ class Parser:
 
         self.scope.declare_variable(name, var_type)
 
-        # print(repr(VariableDeclaration(var_type, name, value)))
+        if reprenabled == True: print(repr(VariableDeclaration(var_type, name, value)))
         return VariableDeclaration(var_type, name, value)
 
 
@@ -142,7 +150,7 @@ class Parser:
         self.expect(TokenType.RIGHT_PAREN)
         self.scope.declare_variable(name, TokenType.RANGE)
 
-        # print(repr(VariableDeclaration(TokenType.RANGE, name, RangeLiteral(IntLiteral(start), IntLiteral(stop), IntLiteral(increment)))))
+        if reprenabled == True: print(repr(VariableDeclaration(TokenType.RANGE, name, RangeLiteral(IntLiteral(start), IntLiteral(stop), IntLiteral(increment)))))
         return VariableDeclaration(TokenType.RANGE, name, RangeLiteral(IntLiteral(start), IntLiteral(stop), IntLiteral(increment)))
     
 
@@ -170,7 +178,7 @@ class Parser:
                 self.next_token()
 
         self.expect(TokenType.RIGHT_BRACKET)
-        # print(repr(VariableDeclaration(arraytype, Identifier(name), ArrayLiteral(typ, size, elements))))
+        if reprenabled == True: print(repr(VariableDeclaration(arraytype, Identifier(name), ArrayLiteral(typ, size, elements))))
         return VariableDeclaration(arraytype, Identifier(name), ArrayLiteral(typ, size, elements))
     
 
@@ -195,7 +203,7 @@ class Parser:
                 self.next_token()
 
         self.expect(TokenType.RIGHT_BRACKET)
-        # print(repr(VariableDeclaration(arraytype, Identifier(name), VectorLiteral(typ, elements))))
+        if reprenabled == True: print(repr(VariableDeclaration(arraytype, Identifier(name), VectorLiteral(typ, elements))))
         return VariableDeclaration(arraytype, Identifier(name), VectorLiteral(typ, elements))
         
 
@@ -217,10 +225,10 @@ class Parser:
                 self.next_token()
                 new_value = self.parse_expression()
                 if isinstance(new_value, Identifier):
-                    # print(repr(BinaryOperation(name, operator, Identifier(new_value))))
+                    if reprenabled == True: print(repr(BinaryOperation(name, operator, Identifier(new_value))))
                     return BinaryOperation(name, operator, Identifier(new_value))
 
-                # print(repr(BinaryOperation(Identifier(name), operator, new_value)))
+                if reprenabled == True: print(repr(BinaryOperation(Identifier(name), operator, new_value)))
                 return BinaryOperation(Identifier(name), operator, new_value)
             
             # array/list/vector accesses
@@ -242,7 +250,7 @@ class Parser:
                 self.next_token()
                 operator = next_token.type
                 self.next_token()
-                # print(repr(UnaryOperation(Identifier(name), operator)))
+                if reprenabled == True: print(repr(UnaryOperation(Identifier(name), operator)))
                 return UnaryOperation(Identifier(name), operator)
             
             elif next_token.type == TokenType.ASSIGN:
@@ -255,7 +263,7 @@ class Parser:
                 right = self.parse_expression()
                 var_type = self.scope.get_variable_type(name)
                 
-                # print(repr(VariableDeclaration(var_type, Identifier(name), right)))
+                if reprenabled == True: print(repr(VariableDeclaration(var_type, Identifier(name), right)))
                 return VariableDeclaration(var_type, Identifier(name), right)
             
             elif next_token.type == TokenType.PERIOD:
@@ -274,17 +282,17 @@ class Parser:
                             self.next_token()
                         arguments.append(self.parse_expression())
                     self.expect(TokenType.RIGHT_PAREN)
-                    # print(repr(MethodCall(parent, property_or_method, arguments)))
+                    if reprenabled == True: print(repr(MethodCall(parent, property_or_method, arguments)))
                     return MethodCall(parent, property_or_method, arguments)
 
                 elif self.current_token().type == TokenType.ASSIGN:
                     self.next_token()
                     value = self.parse_expression()
-                    # print(repr(FieldAssignment(parent, property_or_method, value)))
+                    if reprenabled == True: print(repr(FieldAssignment(parent, property_or_method, value)))
                     return FieldAssignment(parent, property_or_method, value)
 
                 else:
-                    # print(repr(FieldAccess(parent, property_or_method)))
+                    if reprenabled == True: print(repr(FieldAccess(parent, property_or_method)))
                     return FieldAccess(parent, property_or_method)
             
             # wip... make class instantiation work
@@ -318,7 +326,7 @@ class Parser:
       
         # if no operator follows assume variable reference
         self.next_token()
-        # print(repr(Identifier(name)))
+        if reprenabled == True: print(repr(Identifier(name)))
         return Identifier(name)
     
 
@@ -341,8 +349,7 @@ class Parser:
         alias = import_token.value.value
         if not isinstance(import_token.value, Token) or import_token.value.type != TokenType.IDENTIFIER:
             raise SyntaxError(f"Invalid import statement: Expected an identifier, found {import_token.value}")
-        
-        print(self.current_token().type)
+
         if self.current_token().type == TokenType.AS:
             alias = self.current_token().value.value
             self.next_token()
@@ -352,7 +359,7 @@ class Parser:
             raise SyntaxError(f"Variable '{module}' already declared in this scope.")
 
         self.scope.declare_import(module, alias)
-        # print(repr(Import(module)))
+        if reprenabled == True: print(repr(Import(module, alias)))
         return Import(module, alias)
 
     def parse_class_declaration(self):
@@ -404,8 +411,8 @@ class Parser:
         self.scope.exit_scope()
         self.expect(TokenType.RIGHT_BRACE)
         
-        # print(repr(VariableDeclaration(TokenType.CLASS, name, 
-        #    ClassLiteral(extends, children, fields, methods, body))))
+        if reprenabled == True: print(repr(VariableDeclaration(TokenType.CLASS, name, 
+            ClassLiteral(extends, children, fields, methods, body))))
         return VariableDeclaration(
             TokenType.CLASS, name, 
             ClassLiteral(extends, children, fields, methods, body)
@@ -484,6 +491,9 @@ class Parser:
                 return expr
             elif token.type == TokenType.UNTERMINATED_STRING:
                 raise SyntaxError(f"Unterminated string: {token.value}")
+            elif token.type == TokenType.NONE:
+                self.next_token()
+                return NoneObject()
             else:
                 raise SyntaxError(f"Unexpected token in expression: {token.type}")
 
@@ -552,6 +562,9 @@ class Parser:
         else_body = None
         last_else_if = None
 
+        while self.current_token().type == TokenType.EOL:
+            self.next_token()
+
         while self.current_token().type == TokenType.ELSE_IF:
             self.next_token()
             else_if_condition = self.parse_expression()
@@ -562,8 +575,15 @@ class Parser:
             else:
                 else_body = else_if_statement
             last_else_if = else_if_statement
+            while self.current_token().type == TokenType.EOL:
+                self.next_token()
+        
+        while self.current_token().type == TokenType.EOL:
+            self.next_token()
 
         if self.current_token().type == TokenType.ELSE:
+            while self.current_token().type == TokenType.EOL:
+                self.next_token()
             self.next_token()
             final_else_body = self.parse_block()
             if last_else_if:
@@ -587,45 +607,32 @@ class Parser:
 
         increment = self.parse_expression()
         self.expect(TokenType.RIGHT_PAREN)
-        self.expect(TokenType.LEFT_BRACE)
-        body = []
-        while self.current_token().type != TokenType.RIGHT_BRACE:
-            body.append(self.parse_statement())
-            self.next_token()
-        self.expect(TokenType.RIGHT_BRACE)
+        body = self.parse_block()
 
         self.scope.exit_scope()
-        # print(repr(ForLoop(initializer, condition, increment, body)))
+        if reprenabled == True: print(repr(ForLoop(initializer, condition, increment, body)))
         return ForLoop(initializer, condition, increment, body)
 
 
     def parse_while_loop(self):
         self.expect(TokenType.WHILE)
         condition = self.parse_expression()
-        self.expect(TokenType.LEFT_BRACE)
+        self.scope.enter_scope()
 
-        body = []
-        while self.current_token().type != TokenType.RIGHT_BRACE:
-            body.append(self.parse_statement())
-            self.next_token()
-        self.expect(TokenType.RIGHT_BRACE)
-        # print(repr(WhileLoop(condition, body)))
+        body = self.parse_block()
+        self.scope.exit_scope()
+        if reprenabled == True: print(repr(WhileLoop(condition, body)))
         return WhileLoop(condition, body)
 
 
     def parse_do_while_loop(self):
         self.expect(TokenType.DO)
-        self.expect(TokenType.LEFT_BRACE)
-        body = []
-        while self.current_token().type != TokenType.RIGHT_BRACE:
-            body.append(self.parse_statement())
-            self.next_token()
-        self.expect(TokenType.RIGHT_BRACE)
+        body = self.parse_block()
         self.expect(TokenType.WHILE)
         self.expect(TokenType.LEFT_PAREN)
         condition = self.parse_expression()
         self.expect(TokenType.RIGHT_PAREN)
-        # print(repr(DoWhileLoop(body, condition)))
+        if reprenabled == True: print(repr(DoWhileLoop(body, condition)))
         return DoWhileLoop(body, condition)
 
 
@@ -640,7 +647,7 @@ class Parser:
                 self.next_token()
 
         self.expect(TokenType.RIGHT_BRACKET)
-        # print(repr(ListLiteral(elements)))
+        if reprenabled == True: print(repr(ListLiteral(elements)))
         return ListLiteral(elements)
 
 
@@ -657,5 +664,5 @@ class Parser:
         if self.current_token().type in (TokenType.SEMICOLON, TokenType.EOL):
             self.next_token()
         
-        # print(repr(ReturnStatement(values)))
+        if reprenabled == True: print(repr(ReturnStatement(values)))
         return ReturnStatement(values)

@@ -2,6 +2,9 @@ class Scope:
     def __init__(self):
         self.imports = {}
         self.scopes = [{}]
+    
+    def __repr__(self):
+        return f"Scope(\nImports={self.imports}\nScopes=[{self.scopes}]\n)"
 
     def enter_scope(self):
         self.scopes.append({})

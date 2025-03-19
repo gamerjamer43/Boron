@@ -348,6 +348,19 @@ int num = 100
 out("Factorial of " + toStr(num) + " is " + toStr(factorial(num)))
 ```
 
+**99 Bottles of Beer:**
+```
+for (int i = 99; i > 2; i--) {
+    out(toStr(i) + " bottles of beer on the wall, " + toStr(i) + " bottles of beer!")
+    out("Take one down, pass it around, " + toStr(i - 1) + " bottles of beer on the wall!")
+}
+
+out("1 bottle of beer on the wall, 1 bottle of beer!")
+out("Take one down, pass it around, no more bottles of beer on the wall!")
+out("No more bottles of beer on the wall, no more bottles of beer!")
+out("Go to the store, buy some more, 99 more bottles of beer on the wall!")
+```
+
 ---
 
 ## Future Enhancements
@@ -357,4 +370,5 @@ out("Factorial of " + toStr(num) + " is " + toStr(factorial(num)))
 - **Improved Error Handling:** More descriptive syntax and type error messages.
 - **Other shit:** I have no clue what else to add here. A lot more to come.
 
+If you need more info, refer to **"everything.b** in the examples folder, and view the other examples.
 Enjoy writing Boron, a simple yet complex enough introduction to programming!
