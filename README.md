@@ -370,5 +370,5 @@ out("Go to the store, buy some more, 99 more bottles of beer on the wall!")
 - **Improved Error Handling:** More descriptive syntax and type error messages.
 - **Other shit:** I have no clue what else to add here. A lot more to come.
 
-If you need more info, refer to **"everything.b** in the examples folder, and view the other examples.
+If you need more info, refer to **"everything.b"** in the examples folder, and view the other examples.
 Enjoy writing Boron, a simple yet complex enough introduction to programming!

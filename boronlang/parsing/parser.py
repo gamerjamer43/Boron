@@ -17,26 +17,28 @@ from parsing.scope import Scope
 global reprenabled 
 reprenabled = False
 
-# parser
+# the actual parser, also the guts of this shit
 class Parser:
+    # initialize it with the tokens from the lexedr, start the position at 0, and the line at 1
+    # also initialize the scope
     def __init__(self, tokens):
         self.tokens = tokens
         self.pos = 0
         self.line = 1
         self.scope = Scope()
 
+    # gets the current token from the list of tokens
     def current_token(self):
         return self.tokens[self.pos]
-    
-    def current_line(self):
-        return self.line
 
+    # gets next token
     def next_token(self):
         self.pos += 1
         if self.pos < len(self.tokens):
             return self.tokens[self.pos]
         return None
 
+    # expects a specific token and if not throws a syntax error
     def expect(self, token_type):
         token = self.current_token()
         if token.type != token_type:
@@ -44,6 +46,7 @@ class Parser:
         self.next_token()
         return token
 
+    # the actual function that parses, recursively feeds tokens thru parse_statement
     def parse(self):
         if reprenabled == True: print("REPR: ")
         program = Program()
@@ -52,12 +55,14 @@ class Parser:
         if reprenabled == True: print()
         return program
 
+    # the function that gets fed through a million times, maps everything to a dispatch (passing eols), and if not raises a syntax error
     def parse_statement(self):
         token = self.current_token()
         while token.type == TokenType.EOL:
             self.line += 1
             token = self.next_token()
 
+        # big boy table that maps everything to each function
         dispatch_table = {
             TokenType.IMPORT: self.parse_import,
             TokenType.INTEGER: self.parse_variable_declaration,
@@ -88,27 +93,28 @@ class Parser:
             raise SyntaxError(f"Unexpected token {token.type}")
   
     
-    # wip, hopefully this should parse blocks correctly
+    # parses blocks correctly, will in fact be using
     def parse_block(self):
         while self.current_token().type == TokenType.EOL:
             self.next_token()
+
         self.expect(TokenType.LEFT_BRACE)
         statements = []
-        # skip any initial EOLs.
+
         while self.current_token().type == TokenType.EOL:
             self.next_token()
-        # parse until right brace.
+
         while self.current_token().type != TokenType.RIGHT_BRACE:
-            # skip extra EOL between statements.
             while self.current_token().type == TokenType.EOL:
                 self.next_token()
             if self.current_token().type == TokenType.RIGHT_BRACE:
                 break
             statements.append(self.parse_statement())
+            
         self.expect(TokenType.RIGHT_BRACE)
         return statements
 
-        
+    # you guessed it, parses variable declarations
     def parse_variable_declaration(self):
         type_token = self.expect(self.current_token().type)
         var_type = type_token.type
@@ -412,10 +418,10 @@ class Parser:
         self.expect(TokenType.RIGHT_BRACE)
         
         if reprenabled == True: print(repr(VariableDeclaration(TokenType.CLASS, name, 
-            ClassLiteral(extends, children, fields, methods, body))))
+            ClassLiteral(name, extends, children, fields, methods, body))))
         return VariableDeclaration(
             TokenType.CLASS, name, 
-            ClassLiteral(extends, children, fields, methods, body)
+            ClassLiteral(name, extends, children, fields, methods, body)
         )
 
 

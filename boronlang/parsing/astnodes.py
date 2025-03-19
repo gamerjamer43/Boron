@@ -202,7 +202,8 @@ class RangeLiteral(ASTNode):
         return f'RangeLiteral({self.start}, {self.stop}, {self.increment})'
 
 class ClassLiteral(ASTNode):
-    def __init__(self, parent, sub, fields, methods, body):
+    def __init__(self, name, parent, sub, fields, methods, body):
+        self.name = name
         self.parent = parent
         self.sub = sub
         self.fields = fields

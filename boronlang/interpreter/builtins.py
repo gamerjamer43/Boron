@@ -1,4 +1,5 @@
 from rich.prompt import Prompt
+from datetime import datetime
 from decimal import Decimal
 from typing import Union
 from rich import print
@@ -15,6 +16,10 @@ def length(value):
 # print
 def out(data: str) -> None:
     print(f"[white]{data}[/white]")
+
+# logging (also print)
+def log(category: str, message: str) -> None:
+    print(f"[blue][{category}, {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}][/blue] {message}")
 
 # input
 def inp(data: str) -> str:
@@ -58,7 +63,18 @@ def _exit(code: int) -> None:
     exit(code)
 
 def _isinstance(obj: object, info: object) -> bool:
-    return isinstance(obj, info)
+    # make this work, info broken
+    return bool(isinstance(obj, info))
+
+# make this work too, classes = dict
+def _type(obj: object) -> str:
+    return type(obj).__name__
+
+def sort(lst: list) -> list:
+    return sorted(lst)
+
+def contains(text: str, substring: str) -> bool:
+    return substring in text
 
 BUILTINS = {
     "inp": inp,
@@ -71,6 +87,11 @@ BUILTINS = {
     "toStr": toStr,
     "toDec": toDec,
     "toBool": toBool,
+
     "exit": _exit,
-    "isinstance": _isinstance
+    "isinstance": _isinstance,
+    "type": _type,
+
+    "sort": sort,
+    "contains": contains,
 }

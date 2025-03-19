@@ -222,9 +222,9 @@ class Lexer:
                         content = True
                         continue
 
-                    # else if it's a literal, idk what the fuck this does but it works
+                    # else if it's a literal, do the same but append the actual token and then the value, allowing us to use return nodes for 2 things
                     elif mo_return_value and mo_return_value.lastgroup in ["STRING", "IDENTIFIER", "NUMBER", "TRUE", "FALSE", "NONE"]:
-                        return_value = Lexer(mo_return_value.group(mo_return_value.lastgroup)).tokenize()[0]
+                        return_value = Token(TokenType[mo_return_value.lastgroup], mo_return_value.group(mo_return_value.lastgroup), linenum, linepos)
                         self.tokens.append(Token(tok_type, Token(TokenType.NONE, "none", linenum, linepos), linenum, linepos))
                         self.tokens.append(return_value)
                         line = line[mo_return_value.end():]
