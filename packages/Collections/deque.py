@@ -1,24 +1,26 @@
+from collections import deque
+
 class Deque:
     env = {}
 
     def __init__(self):
         """Initialize an empty deque."""
-        self.items = []
+        self.items = deque()
 
     def pushFront(self, item):
         """Add an item to the front of the deque."""
-        self.items.append(item)
+        self.items.appendleft(item)
 
     def pushBack(self, item):
         """Add an item to the back of the deque."""
-        self.items.insert(0, item)
+        self.items.append(item)
 
     def popFront(self):
         """Remove and return the front item of the deque. 
         Returns None if the deque is empty.
         """
         if self.items:
-            return self.items.pop()
+            return self.items.popleft()
         return None
 
     def popBack(self):
@@ -26,11 +28,11 @@ class Deque:
         Returns None if the deque is empty.
         """
         if self.items:
-            return self.items.pop(0)
+            return self.items.pop()
         return None
 
     def index(self, index):
-        """Return the item at the given index or None if the index is out of range."""
+        """Return the item at the given index or None if out of range."""
         try:
             return self.items[index]
         except IndexError:

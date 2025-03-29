@@ -1,5 +1,6 @@
 #! the big bertha of all test files. the dictionary of all dictionaries
 #! the book of boron
+
 #import Collections  #! an import statement, deque will be imported from here
 
 #! all current types supported
@@ -12,6 +13,11 @@ range myRange = (1, 9, 1)  #! make it actually work with the for loop
 vec myVec[int] = [2, 3, 4]
 array myArray[int][5] = [1, 2, 3, 4, 5]
 list myList = [1, 2, 3]
+
+#! adding soon
+#! dict myDict = {1: "one", 2: "two", 3: "three"}
+#! set c = {1, 2, 3}
+#! tuple c = (1, 2, 3)
 
 
 #! all operators currently added (i want to say)

@@ -5,18 +5,21 @@ from parsing.astnodes import *
 # decimal import for better precision, fuck floats no floats in my language
 from decimal import Decimal
 # importlib and os for package support
-import importlib.util, os
+import importlib.util, os, sys
 from rich import print  # colored prints
 
 # builtin functions
 from interpreter.builtins import BUILTINS
 
 class Interpreter:
-    def __init__(self):
+    def __init__(self, args=[]):
         # initialize a global scope and the package folder (locally for right now)
         self.global_scope = {}
         self.package_folder = "C:\\Users\\fuzio\\Downloads\\programs\\showcase\\Boron\\packages"
         self.global_scope.update(BUILTINS)
+
+        # figure out how to do something with these
+        self.cliargs = args
 
         self.dispatch = {
             Program: self.evaluate_program,
@@ -111,29 +114,36 @@ class Interpreter:
 
     # loading for packages, packages are just .py files for right now, full python libraries soon
     def evaluate_import(self, node):
-        # get name from node, get path from name
         module_name = node.module
-        package_path = os.path.join(self.package_folder, f"{module_name}.py")
+        package_path = os.path.join(self.package_folder, module_name)
 
-        # if it doesn't exist raise an import error
-        if not os.path.exists(package_path):
+        # Check if it's a package with an __init__.py
+        init_path = os.path.join(package_path, "__init__.py")
+        single_file_path = os.path.join(self.package_folder, f"{module_name}.py")
+
+        if os.path.isdir(package_path) and os.path.exists(init_path):
+            # Import as a package (folder with __init__.py)
+            spec = importlib.util.spec_from_file_location(module_name, init_path)
+        elif os.path.exists(single_file_path):
+            # Import as a single-file module (Package.py)
+            spec = importlib.util.spec_from_file_location(module_name, single_file_path)
+        else:
             raise ImportError(f"Package '{module_name}' not found in '{self.package_folder}'.")
 
-        # get spec from file location, get module from spec, and execute the module
-        spec = importlib.util.spec_from_file_location(module_name, package_path)
+        # Load and execute the module
         module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module  # Ensure it's registered in sys.modules
         spec.loader.exec_module(module)
-        module_name = node.alias
 
-        # add to global scope
+        # Handle aliasing (if any)
+        module_name = node.alias or module_name
         self.global_scope[module_name] = module
 
-        # add all classes defined in the module to the global scope.
+        # Add all classes and functions from the module to the global scope
         for attr_name in dir(module):
             attr = getattr(module, attr_name)
-            if isinstance(attr, type):
+            if isinstance(attr, type) or callable(attr):  # Classes & functions
                 self.global_scope[attr_name] = attr
-        # print(f"Imported package: {module_name}")
     
     # variable evaluation, checks type with the function below
     def evaluate_variable_declaration(self, node):
@@ -532,7 +542,7 @@ class Interpreter:
             if method_name not in class_obj.env:
                 raise AttributeError(f"Class '{class_obj}' does not have a method '{method_name}'.")
             method_node = class_obj.env[method_name]
-            evaluated_args = [self.evaluate(arg) for arg in node.arguments]
+            evaluated_args = [self.evaluate(arg) for arg in node.parameters]
             evaluated_kwargs = {key: self.evaluate(value) for key, value in node.kwargs.items()} if hasattr(node, 'kwargs') else {}
 
             evaluated_args = [

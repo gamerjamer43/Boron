@@ -314,36 +314,43 @@ class Parser:
                 else:
                     if reprenabled == True: print(repr(FieldAccess(parent, property_or_method)))
                     return FieldAccess(parent, property_or_method)
-            
-            # wip... make class instantiation work
+
             elif next_token.type == TokenType.IDENTIFIER:
                 typ = self.expect(TokenType.IDENTIFIER)
                 name = self.expect(TokenType.IDENTIFIER)
                 self.expect(TokenType.ASSIGN)
-                self.expect(TokenType.NEW)
-                self.expect(TokenType.IDENTIFIER)
-                arguments = []
-                kwargs = {}
-                if self.current_token().type == TokenType.LEFT_PAREN:
-                    self.expect(TokenType.LEFT_PAREN)
-                    while self.current_token().type != TokenType.RIGHT_PAREN:
-                        # If an identifier is followed by an assignment, treat it as a keyword argument.
-                        if self.current_token().type == TokenType.IDENTIFIER:
-                            next_token = self.tokens[self.pos+1] if self.pos+1 < len(self.tokens) else None
-                            if next_token and next_token.type == TokenType.ASSIGN:
-                                key = self.current_token().value
-                                self.next_token()  # consume the identifier
-                                self.expect(TokenType.ASSIGN)  # consume the '='
-                                value = self.parse_expression()
-                                kwargs[key] = value
+
+                # Check if the instantiation uses the 'new' keyword.
+                if self.current_token().type == TokenType.NEW:
+                    self.next_token()  # consume NEW
+                    self.expect(TokenType.IDENTIFIER)  # expect the class identifier after NEW
+                    arguments = []
+                    kwargs = {}
+                    if self.current_token().type == TokenType.LEFT_PAREN:
+                        self.expect(TokenType.LEFT_PAREN)
+                        while self.current_token().type != TokenType.RIGHT_PAREN:
+                            if self.current_token().type == TokenType.IDENTIFIER:
+                                next_token = self.tokens[self.pos+1] if self.pos+1 < len(self.tokens) else None
+                                if next_token and next_token.type == TokenType.ASSIGN:
+                                    key = self.current_token().value
+                                    self.next_token()  # consume the identifier
+                                    self.expect(TokenType.ASSIGN)  # consume '='
+                                    value = self.parse_expression()
+                                    kwargs[key] = value
+                                else:
+                                    arguments.append(self.parse_expression())
                             else:
                                 arguments.append(self.parse_expression())
-                        else:
-                            arguments.append(self.parse_expression())
-                        if self.current_token().type == TokenType.COMMA:
-                            self.next_token()
-                    self.expect(TokenType.RIGHT_PAREN)
-                return ClassInstantiation(typ, name, arguments, kwargs)
+                            if self.current_token().type == TokenType.COMMA:
+                                self.next_token()
+                        self.expect(TokenType.RIGHT_PAREN)
+                    return ClassInstantiation(typ, name, arguments, kwargs)
+                else:
+                    # Instead of using new, parse the expression normally (e.g., pattern.findall(...))
+                    expr = self.parse_expression()
+                    # Here we wrap the parsed expression in a ClassInstantiation node.
+                    # You might adjust the arguments structure if needed.
+                    return ClassInstantiation(typ, name, [expr], {})
 
             elif next_token.type == TokenType.LEFT_PAREN:
                 self.next_token()

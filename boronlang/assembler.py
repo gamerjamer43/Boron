@@ -33,7 +33,7 @@ def assemble(filename, args) -> None:
 
         # interpretation timing
         start = time()
-        Interpreter().evaluate(ast)
+        Interpreter(args).evaluate(ast)
         end = time()
 
         # execution delay and time in milliseconds

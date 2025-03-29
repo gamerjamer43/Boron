@@ -58,7 +58,7 @@ def toBool(string: str) -> bool:
         print("[red]StringError\n", f"The string\n'{string}\ncannot validly be converted to an boolean. Possibly not a boolean value, or contains other characters?'[/red]")
         exit(0)
 
-#! system operations
+# system operations
 def _exit(code: int) -> None:
     exit(code)
 
