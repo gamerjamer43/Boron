@@ -19,7 +19,7 @@ reprenabled = False
 
 # the actual parser, also the guts of this shit
 class Parser:
-    # initialize it with the tokens from the lexedr, start the position at 0, and the line at 1
+    # initialize it with the tokens from the lexer, start the position at 0, and the line at 1
     # also initialize the scope
     def __init__(self, tokens):
         self.tokens = tokens
@@ -283,13 +283,27 @@ class Parser:
                 if self.current_token().type == TokenType.LEFT_PAREN:
                     self.expect(TokenType.LEFT_PAREN)
                     arguments = []
+                    kwargs = {}
                     while self.current_token().type != TokenType.RIGHT_PAREN:
+                        # If an identifier is followed by an ASSIGN, treat it as a keyword argument.
+                        if self.current_token().type == TokenType.IDENTIFIER:
+                            next_token = self.tokens[self.pos+1] if self.pos+1 < len(self.tokens) else None
+                            if next_token and next_token.type == TokenType.ASSIGN:
+                                key = self.current_token().value
+                                self.next_token()  # consume the identifier
+                                self.expect(TokenType.ASSIGN)  # consume the '='
+                                value = self.parse_expression()
+                                kwargs[key] = value
+                            else:
+                                arguments.append(self.parse_expression())
+                        else:
+                            arguments.append(self.parse_expression())
                         if self.current_token().type == TokenType.COMMA:
                             self.next_token()
-                        arguments.append(self.parse_expression())
                     self.expect(TokenType.RIGHT_PAREN)
-                    if reprenabled == True: print(repr(MethodCall(parent, property_or_method, arguments)))
-                    return MethodCall(parent, property_or_method, arguments)
+                    if reprenabled == True: 
+                        print(repr(MethodCall(parent, property_or_method, arguments, kwargs)))
+                    return MethodCall(parent, property_or_method, arguments, kwargs)
 
                 elif self.current_token().type == TokenType.ASSIGN:
                     self.next_token()
@@ -309,18 +323,27 @@ class Parser:
                 self.expect(TokenType.NEW)
                 self.expect(TokenType.IDENTIFIER)
                 arguments = []
-
+                kwargs = {}
                 if self.current_token().type == TokenType.LEFT_PAREN:
                     self.expect(TokenType.LEFT_PAREN)
-
                     while self.current_token().type != TokenType.RIGHT_PAREN:
-                        arguments.append(self.parse_expression())
+                        # If an identifier is followed by an assignment, treat it as a keyword argument.
+                        if self.current_token().type == TokenType.IDENTIFIER:
+                            next_token = self.tokens[self.pos+1] if self.pos+1 < len(self.tokens) else None
+                            if next_token and next_token.type == TokenType.ASSIGN:
+                                key = self.current_token().value
+                                self.next_token()  # consume the identifier
+                                self.expect(TokenType.ASSIGN)  # consume the '='
+                                value = self.parse_expression()
+                                kwargs[key] = value
+                            else:
+                                arguments.append(self.parse_expression())
+                        else:
+                            arguments.append(self.parse_expression())
                         if self.current_token().type == TokenType.COMMA:
                             self.next_token()
-
                     self.expect(TokenType.RIGHT_PAREN)
-
-                return ClassInstantiation(typ, name, arguments)
+                return ClassInstantiation(typ, name, arguments, kwargs)
 
             elif next_token.type == TokenType.LEFT_PAREN:
                 self.next_token()
@@ -339,15 +362,28 @@ class Parser:
     def parse_function_call(self, name):
         self.expect(TokenType.LEFT_PAREN)
         arguments = []
-        
-        # parse arguments separated by commas
+        kwargs = {}
+        # Parse each argument until we reach the closing parenthesis
         while self.current_token().type != TokenType.RIGHT_PAREN:
-            arguments.append(self.parse_expression())
+            # Check if the argument is a keyword argument (identifier followed by ASSIGN)
+            if self.current_token().type == TokenType.IDENTIFIER:
+                next_token = self.tokens[self.pos+1] if self.pos+1 < len(self.tokens) else None
+                if next_token and next_token.type == TokenType.ASSIGN:
+                    key = self.current_token().value  # the keyword name
+                    self.next_token()  # consume the identifier
+                    self.expect(TokenType.ASSIGN)  # consume the '='
+                    value = self.parse_expression()
+                    kwargs[key] = value
+                else:
+                    # Positional argument
+                    arguments.append(self.parse_expression())
+            else:
+                arguments.append(self.parse_expression())
+            # Skip comma if present
             if self.current_token().type == TokenType.COMMA:
                 self.next_token()
-
-        self.expect(TokenType.RIGHT_PAREN) 
-        return FunctionCall(name, arguments)
+        self.expect(TokenType.RIGHT_PAREN)
+        return FunctionCall(name, arguments, kwargs)
 
 
     def parse_import(self):
@@ -623,10 +659,7 @@ class Parser:
     def parse_while_loop(self):
         self.expect(TokenType.WHILE)
         condition = self.parse_expression()
-        self.scope.enter_scope()
-
         body = self.parse_block()
-        self.scope.exit_scope()
         if reprenabled == True: print(repr(WhileLoop(condition, body)))
         return WhileLoop(condition, body)
 

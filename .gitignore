@@ -3,6 +3,7 @@ concepts/
 tests/
 .vscode/
 c++/
+.mypy_cache/
 *.pyc
 tdl.txt
 ai.b

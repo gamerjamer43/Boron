@@ -101,6 +101,13 @@ class Interpreter:
             raise ValueError("Expected string, got {} with value {}.".format(type(value), value))
 
         return value
+    
+    def create_callback(self, func_node):
+        def callback():
+            func_name = func_node.name.value if hasattr(func_node.name, "value") else func_node.name
+            function_call_node = FunctionCall(func_name, [], {})
+            self.evaluate_function_call(function_call_node)
+        return callback
 
     # loading for packages, packages are just .py files for right now, full python libraries soon
     def evaluate_import(self, node):
@@ -120,6 +127,12 @@ class Interpreter:
 
         # add to global scope
         self.global_scope[module_name] = module
+
+        # add all classes defined in the module to the global scope.
+        for attr_name in dir(module):
+            attr = getattr(module, attr_name)
+            if isinstance(attr, type):
+                self.global_scope[attr_name] = attr
         # print(f"Imported package: {module_name}")
     
     # variable evaluation, checks type with the function below
@@ -308,15 +321,38 @@ class Interpreter:
             raise NameError(f"Function '{func_name}' is not defined.")
         
         function = self.global_scope[func_name]
-        arguments = [self.evaluate(arg) for arg in node.parameters]
+        evaluated_args = [self.evaluate(arg) for arg in node.parameters]
+        evaluated_kwargs = {key: self.evaluate(value) for key, value in node.kwargs.items()} if hasattr(node, 'kwargs') else {}
 
+        evaluated_args = [
+                self.create_callback(arg) if hasattr(arg, "parameters") and hasattr(arg, "body") else arg
+                for arg in evaluated_args
+            ]
+
+        for key, value in evaluated_kwargs.items():
+            if key == "command" and hasattr(value, "parameters") and hasattr(value, "body"):
+                evaluated_kwargs[key] = self.create_callback(value)
+
+        # If it's a native Python function, call it with both args and kwargs.
         if not hasattr(function, "parameters"):
-            return function(*arguments)
-
+            return function(*evaluated_args, **evaluated_kwargs)
+        
+        # Otherwise, assume it's a user-defined function.
         local_scope = {}
-        for param, arg in zip(function.parameters, arguments):
-            local_scope[param.name] = arg
-
+        param_names = [param.name for param in function.parameters]
+        # Bind positional arguments first, then keyword arguments.
+        for i, param in enumerate(function.parameters):
+            if i < len(evaluated_args):
+                local_scope[param.name] = evaluated_args[i]
+            elif param.name in evaluated_kwargs:
+                local_scope[param.name] = evaluated_kwargs[param.name]
+            else:
+                raise TypeError(f"Missing argument for parameter '{param.name}'")
+        # Check for any unexpected keyword arguments.
+        for key in evaluated_kwargs:
+            if key not in param_names:
+                raise TypeError(f"Unexpected keyword argument '{key}'")
+        
         previous_scope = self.global_scope.copy()
         combined_scope = {**self.global_scope, **local_scope}
         self.global_scope = combined_scope
@@ -391,21 +427,49 @@ class Interpreter:
             raise NameError(f"Class '{typ}' not defined.")
         
         class_literal = self.global_scope[typ]
+        evaluated_args = [self.evaluate(arg) for arg in node.arguments]
+        evaluated_kwargs = {key: self.evaluate(value) for key, value in node.kwargs.items()} if hasattr(node, 'kwargs') else {}
+
+        evaluated_args = [
+            self.create_callback(arg) if hasattr(arg, "parameters") and hasattr(arg, "body") else arg
+            for arg in evaluated_args
+        ]
+                
+        for key, value in evaluated_kwargs.items():
+            if key == "command" and hasattr(value, "parameters") and hasattr(value, "body"):
+                evaluated_kwargs[key] = self.create_callback(value)
+
+        # For native Python classes, instantiate with both args and kwargs.
+        if isinstance(class_literal, type):
+            instance = class_literal(*evaluated_args, **evaluated_kwargs)
+            self.global_scope[name] = instance
+            return instance
+
+        # Otherwise, assume it's a language-defined class.
         instance = {
             '__class__': class_literal,
             'fields': dict(class_literal.env)
         }
-        evaluated_args = [self.evaluate(arg) for arg in node.arguments]
         
-        # if an initializer (__init__) is defined in the class, call it.
+        # Call the initializer (__init__) if defined.
         if '__init__' in class_literal.env:
             init_method = class_literal.env['__init__']
             local_scope = {}
             local_scope[init_method.parameters[0].name] = instance
 
-            for param, arg in zip(init_method.parameters[1:], evaluated_args):
-                local_scope[param.name] = arg
-
+            param_names = [param.name for param in init_method.parameters]
+            # Bind positional and keyword arguments for __init__ (skip the first parameter, typically self).
+            for i, param in enumerate(init_method.parameters[1:]):
+                if i < len(evaluated_args):
+                    local_scope[param.name] = evaluated_args[i]
+                elif param.name in evaluated_kwargs:
+                    local_scope[param.name] = evaluated_kwargs[param.name]
+                else:
+                    raise TypeError(f"Missing argument for parameter '{param.name}' in __init__")
+            for key in evaluated_kwargs:
+                if key not in param_names:
+                    raise TypeError(f"Unexpected keyword argument '{key}' in __init__")
+            
             previous_scope = self.global_scope.copy()
             self.global_scope.update(local_scope)
             
@@ -418,6 +482,8 @@ class Interpreter:
 
         self.global_scope[name] = instance
         return instance
+
+
 
     def evaluate_field_assignment(self, node):
         # Check if the parent is a Token; if so, handle it as an identifier.
@@ -466,14 +532,33 @@ class Interpreter:
             if method_name not in class_obj.env:
                 raise AttributeError(f"Class '{class_obj}' does not have a method '{method_name}'.")
             method_node = class_obj.env[method_name]
-            evaluated_args = [self.evaluate(arg) for arg in node.parameters]
+            evaluated_args = [self.evaluate(arg) for arg in node.arguments]
+            evaluated_kwargs = {key: self.evaluate(value) for key, value in node.kwargs.items()} if hasattr(node, 'kwargs') else {}
+
+            evaluated_args = [
+                self.create_callback(arg) if hasattr(arg, "parameters") and hasattr(arg, "body") else arg
+                for arg in evaluated_args
+            ]
+
+            for key, value in evaluated_kwargs.items():
+                if key == "command" and hasattr(value, "parameters") and hasattr(value, "body"):
+                    evaluated_kwargs[key] = self.create_callback(value)
 
             local_scope = {}
             local_scope[method_node.parameters[0].name] = parent_obj
-
-            for param, arg in zip(method_node.parameters[1:], evaluated_args):
-                local_scope[param.name] = arg
-
+            param_names = [param.name for param in method_node.parameters]
+            # Bind positional and keyword arguments (skip the first parameter which is self).
+            for i, param in enumerate(method_node.parameters[1:]):
+                if i < len(evaluated_args):
+                    local_scope[param.name] = evaluated_args[i]
+                elif param.name in evaluated_kwargs:
+                    local_scope[param.name] = evaluated_kwargs[param.name]
+                else:
+                    raise TypeError(f"Missing argument for parameter '{param.name}' in method '{method_name}'")
+            for key in evaluated_kwargs:
+                if key not in param_names:
+                    raise TypeError(f"Unexpected keyword argument '{key}' in method '{method_name}'")
+            
             previous_scope = self.global_scope.copy()
             self.global_scope.update(local_scope)
             
@@ -505,7 +590,9 @@ class Interpreter:
                 raise AttributeError(f"Package '{package_name}' does not have a method '{method_name}'.")
             
             args = [self.evaluate(arg) for arg in node.parameters]
-            return method_func(*args)
+            kwargs = {key: self.evaluate(value) for key, value in node.kwargs.items()} if hasattr(node, 'kwargs') else {}
+            return method_func(*args, **kwargs)
+
     
     def evaluate_index_access(self, node):
         container = self.evaluate(node.container)

@@ -1,5 +1,6 @@
 #! the big bertha of all test files. the dictionary of all dictionaries
 #! the book of boron
+#import Collections  #! an import statement, deque will be imported from here
 
 #! all current types supported
 #! data types, add dict, set, tuple
@@ -18,29 +19,29 @@ int x = 10
 int y = 20
 
 #! binary
-int sum = x + y                #! addition
-int difference = x - y         #! subtraction
-int product = x * y            #! multiplication
-dec divisor = x / y            #! division
-int power = x ** y             #! powers
-int floor = x // y             #! floor division
-int modulus = x % y            #! modulus
+int sum = x + y                    #! addition
+int difference = x - y             #! subtraction
+int product = x * y                #! multiplication
+dec divisor = x / y                #! division
+int power = x ** y                 #! powers
+int floor = x // y                 #! floor division
+int modulus = x % y                #! modulus
 
 #! compound assignment
-x++                            #! increment
-y--                            #! decrement
-x -= 1                         #! decrease
-y += 1                         #! increase
-y /= 2                         #! divide current
-y *= 2                         #! multiply current
+x++                                #! increment
+y--                                #! decrement
+x -= 1                             #! decrease
+y += 1                             #! increase
+y /= 2                             #! divide current
+y *= 2                             #! multiply current
 
 #! boolean operators
-bool boolean = x == y          #! equal
-bool boolean2 = x != y         #! not equal
-bool boolean3 = x > y          #! bool greater than
-bool boolean4 = x < y          #! bool less than
-bool boolean5 = true and true  #! and
-bool boolean6 = true or false  #! or
+bool boolean = x == y              #! equal
+bool boolean2 = x != y             #! not equal
+bool boolean3 = x > y              #! bool greater than
+bool boolean4 = x < y              #! bool less than
+bool boolean5 = true and true      #! and
+bool boolean6 = true or false      #! or
 
 
 #! all control flow supported
@@ -85,13 +86,21 @@ out("Broke from case!")
 #! functions
 #! demo function
 fn myFunction(int arg1, int arg2) -> bool {
-    if arg1 == arg2 {
-        -> true
+    bool arg1tf
+    bool arg2tf
+
+    if arg1 % 2 == 0 {
+        arg1tf = true
+    } 
+    
+    if arg2 % 2 == 0 {
+        arg2tf = true
     }
-    -> false
+
+    -> arg1tf, arg2tf
 }
 
-out(myFunction(1, 1)) #! usage, prints true if #s equal, false if not
+out(myFunction(1, 2)) #! usage, prints true if #s equal, false if not
 
 
 #! classes
@@ -112,5 +121,8 @@ class Integer {
 Integer mine = new Integer(1)
 out("Number: " + toStr(mine.number) + ", Add 2: " + toStr(mine.add(2)))
 
+#! use the deque object imported from collections, just import and you can use all its methods
+Deque deque = new Deque()
+deque.pushFront(1)
 
 #! with this, you can do literally anything in the language. learn the syntax and fuck around :)

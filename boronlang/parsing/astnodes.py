@@ -32,9 +32,10 @@ class Function(ASTNode):
         return f'''Function({self.name}, {self.parameters}, {self.return_type}, {self.body})'''
 
 class FunctionCall(ASTNode):
-    def __init__(self, name, parameters):
+    def __init__(self, name, parameters, kwargs=None):
         self.name = name
         self.parameters = parameters
+        self.kwargs = kwargs if kwargs is not None else {}
     
     def __repr__(self):
         return f'''FunctionCall({self.name}, {self.parameters})'''
@@ -48,10 +49,11 @@ class Parameter(ASTNode):
         return f'''Parameter({self.param_type}, {self.name})'''
 
 class MethodCall(ASTNode):
-    def __init__(self, parent, name, parameters):
+    def __init__(self, parent, name, parameters, kwargs=None):
         self.parent = parent
         self.name = name
         self.parameters = parameters
+        self.kwargs = kwargs if kwargs is not None else {}
     
     def __repr__(self):
         return f'''MethodCall({self.parent}, {self.name}, {self.parameters})'''
@@ -240,13 +242,14 @@ class IndexAssignment:
 
 # instancing related nodes
 class ClassInstantiation(ASTNode):
-    def __init__(self, typ, name, arguments):
+    def __init__(self, typ, name, arguments, kwargs=None):
         self.typ = typ
         self.name = name
         self.arguments = arguments
+        self.kwargs = kwargs if kwargs is not None else {}
 
     def __repr__(self):
-        return f"ClassInstantiation({self.typ}, {self.name}, {self.arguments})"
+        return f"ClassInstantiation({self.typ}, {self.name}, {self.arguments}, {self.kwarguments})"
 
 class FieldAccess(ASTNode):
     def __init__(self, parent, field):
