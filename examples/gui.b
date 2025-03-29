@@ -1,5 +1,5 @@
 #! A basic GUI application using borontk components
-#import GUI
+#import BoronTk
 
 #! Create the main application window with a title and dimensions.
 App app = new TkApplication("My GUI App", 800, 600)
