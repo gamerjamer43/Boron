@@ -1,6 +1,8 @@
 # tokentype from my lexer and all ASTNodes from parser
-from lexer.lexer import TokenType, Token
+from lexer.lexer import TokenType, Token, Lexer
+from parsing.parser import Parser
 from parsing.astnodes import *
+import assembler
 
 # decimal import for better precision, fuck floats no floats in my language
 from decimal import Decimal
@@ -10,6 +12,10 @@ from rich import print  # colored prints
 
 # builtin functions
 from interpreter.builtins import BUILTINS
+
+#! disable or enable repr
+global reprenabled 
+reprenabled = False
 
 class Interpreter:
     def __init__(self, args=[]):
@@ -121,29 +127,41 @@ class Interpreter:
         init_path = os.path.join(package_path, "__init__.py")
         single_file_path = os.path.join(self.package_folder, f"{module_name}.py")
 
+        current_directory = os.getcwd()
+        boron_file_path = os.path.join(current_directory, f"{module_name}.b")
+
         if os.path.isdir(package_path) and os.path.exists(init_path):
             # Import as a package (folder with __init__.py)
             spec = importlib.util.spec_from_file_location(module_name, init_path)
         elif os.path.exists(single_file_path):
             # Import as a single-file module (Package.py)
             spec = importlib.util.spec_from_file_location(module_name, single_file_path)
+        elif os.path.exists(boron_file_path):
+            spec = None
+            with open(boron_file_path, "r") as file:
+                code = file.read()
+
+            tokens = Lexer(code).tokenize()
+            ast = Parser(tokens).parse()
+            module = self.evaluate_program(ast)
         else:
             raise ImportError(f"Package '{module_name}' not found in '{self.package_folder}'.")
 
-        # Load and execute the module
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module  # Ensure it's registered in sys.modules
-        spec.loader.exec_module(module)
+        if spec is not None:
+            # Load and execute the module
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module  # Ensure it's registered in sys.modules
+            spec.loader.exec_module(module)
 
-        # Handle aliasing (if any)
-        module_name = node.alias or module_name
-        self.global_scope[module_name] = module
+            # Handle aliasing (if any)
+            module_name = node.alias or module_name
+            self.global_scope[module_name] = module
 
-        # Add all classes and functions from the module to the global scope
-        for attr_name in dir(module):
-            attr = getattr(module, attr_name)
-            if isinstance(attr, type) or callable(attr):  # Classes & functions
-                self.global_scope[attr_name] = attr
+            # Add all classes and functions from the module to the global scope
+            for attr_name in dir(module):
+                attr = getattr(module, attr_name)
+                if isinstance(attr, type) or callable(attr):  # Classes & functions
+                    self.global_scope[attr_name] = attr
     
     # variable evaluation, checks type with the function below
     def evaluate_variable_declaration(self, node):
@@ -172,14 +190,15 @@ class Interpreter:
                 value = None
 
         # finally enforce type
-        # print(f"Enforcing type for {node.var_type}, {node.name}: {value}")
+        if reprenabled == True: print(f"Enforcing type for {node.var_type}, {node.name}: {value}")
         value = self.enforce_type(node.var_type, value)
         
         # and add to global scope (this is just for logging purposes)
-        # if var_name in self.global_scope:
-            # print(f"Assigned {var_name} = {value}")
-        # else:
-            # print(f"Declared {node.var_type} {var_name} = {value}")
+        if reprenabled == True:
+            if var_name in self.global_scope:
+                print(f"Assigned {var_name} = {value}")
+            else:
+                print(f"Declared {node.var_type} {var_name} = {value}")
 
         self.global_scope[var_name] = value
         return value
@@ -259,7 +278,7 @@ class Interpreter:
                     if isinstance(value, bool):
                         # negate the boolean value in the global scope
                         self.global_scope[identifier_name] = not value
-                        # print(f"Negated {identifier_name}: {not value}")
+                        if reprenabled == True: print(f"Negated {identifier_name}: {not value}")
                         return not value
                     else:
                         raise TypeError(f"'{identifier_name}' is not a boolean and cannot be negated.")
@@ -272,13 +291,13 @@ class Interpreter:
         elif node.operator == TokenType.INCREMENT:
             if isinstance(node.operand, Identifier):
                 self.global_scope[node.operand.name] += 1
-                # print(f"Incremented {node.operand.name} +1")
+                if reprenabled == True: print(f"Incremented {node.operand.name} +1")
                 return operand
             return operand + 1
         elif node.operator == TokenType.DECREMENT:
             if isinstance(node.operand, Identifier):
                 self.global_scope[node.operand.name] -= 1
-                # print(f"Decremented {node.operand.name} -1")
+                if reprenabled == True: print(f"Decremented {node.operand.name} -1")
                 return operand
             return operand - 1
         else:
@@ -323,7 +342,7 @@ class Interpreter:
 
     def evaluate_function(self, node):
         self.global_scope[node.name.value] = node
-        # print(f"Defined function: {node.name.value}")
+        if reprenabled == True: print(f"Defined function: {node.name.value}")
 
     def evaluate_function_call(self, node):
         func_name = node.name
@@ -395,7 +414,7 @@ class Interpreter:
             raise ValueError(f"Array size mismatch: expected {node.size}, got {len(elements)}")
         
         # afterwards, enforce type
-        # print(f"Enforcing type for array: {elements}")
+        if reprenabled == True: print(f"Enforcing type for array: {elements}")
         for element in elements:
             self.enforce_type(node.type, element)
 
@@ -406,7 +425,7 @@ class Interpreter:
         elements = [self.evaluate(element) for element in node.elements]
         
         # enforce type, dwb size
-        # print(f"Enforcing type for array: {elements}")
+        if reprenabled == True: print(f"Enforcing type for array: {elements}")
         for element in elements:
             self.enforce_type(node.type, element)
 
