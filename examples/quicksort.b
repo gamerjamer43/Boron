@@ -24,6 +24,8 @@ fn quicksort(list arr) -> list {
     -> quicksort(left) + equal + quicksort(right)
 }
 
-list sample_list = Random.fill(1000, 10000)
+list sample_list = Random.fill(10, 10000)
 list sorted_list = quicksort(sample_list)
 out("Sorted array: " + toStr(sorted_list))
+
+list sorted_list2 = sort(Random.fill(1000, 10000))

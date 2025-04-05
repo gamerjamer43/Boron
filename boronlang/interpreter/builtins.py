@@ -14,8 +14,20 @@ def length(value):
         raise ValueError("Object has no length.")
 
 # print
-def out(data: str) -> None:
-    print(f"[white]{data}[/white]")
+def out(data) -> None:
+    # if class
+    if isinstance(data, dict) and '__class__' in data and '__str__' in data:
+        print(f"[white]{data['__str__']}[/white]")
+
+    # if class in list
+    elif isinstance(data, list):
+        for index, item in enumerate(data):
+            if isinstance(item, dict) and '__class__' in item and '__str__' in item:
+                data[index] = item['__str__']
+        print(f"[white]{data}[/white]")
+
+    else:
+        print(f"[white]{data}[/white]")
 
 # logging (also print)
 def log(category: str, message: str) -> None:

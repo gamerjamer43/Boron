@@ -2,10 +2,9 @@
 from lexer.lexer import TokenType, Token, Lexer
 from parsing.parser import Parser
 from parsing.astnodes import *
-import assembler
 
 # decimal import for better precision, fuck floats no floats in my language
-from decimal import Decimal
+from decimal import Decimal, getcontext
 # importlib and os for package support
 import importlib.util, os, sys
 from rich import print  # colored prints
@@ -18,7 +17,7 @@ global reprenabled
 reprenabled = False
 
 class Interpreter:
-    def __init__(self, args=[]):
+    def __init__(self, filepath: str, args=[]):
         # initialize a global scope and the package folder (locally for right now)
         self.global_scope = {}
         self.package_folder = "C:\\Users\\fuzio\\Downloads\\programs\\showcase\\Boron\\packages"
@@ -26,17 +25,20 @@ class Interpreter:
 
         # figure out how to do something with these
         self.cliargs = args
+        self.global_scope["args"] = lambda: self.cliargs
+        self.filepath = filepath
 
         self.dispatch = {
             Program: self.evaluate_program,
             Import: self.evaluate_import,
+            Imports: self.evaluate_imports,
             VariableDeclaration: self.evaluate_variable_declaration,
             BinaryOperation: self.evaluate_binary_operation,
             UnaryOperation: self.evaluate_unary_operation,
             IfStatement: self.evaluate_if_statement,
             ForLoop: self.evaluate_for_loop,
             WhileLoop: self.evaluate_while_loop,
-            DoWhileLoop: self.evaluate_do_while_loop,
+            DoWhileLoop: self.evaluate_while_loop,
             Function: self.evaluate_function,
             FunctionCall: self.evaluate_function_call,
             ReturnStatement: self.evaluate_return_statement,
@@ -48,6 +50,7 @@ class Interpreter:
             ListLiteral: lambda node: [self.evaluate(el) for el in node.elements],
             ArrayLiteral: self.evaluate_array_literal,
             VectorLiteral: self.evaluate_vector_literal,
+            DictLiteral: lambda node: {self.evaluate(key): self.evaluate(value) for key, value in node.elements.items()},
             RangeLiteral: lambda node: range(
                 self.evaluate(node.start),
                 self.evaluate(node.stop),
@@ -60,6 +63,7 @@ class Interpreter:
             MethodCall: self.evaluate_method_call,
             IndexAccess: self.evaluate_index_access,
             IndexAssignment: self.evaluate_index_assignment,
+            Break: self.evaluate_break,
             NoneObject: lambda node: None,
             EndOfFile: lambda node: None,
         }
@@ -129,7 +133,8 @@ class Interpreter:
 
         current_directory = os.getcwd()
         boron_file_path = os.path.join(current_directory, f"{module_name}.b")
-
+        if not os.path.exists(boron_file_path): boron_file_path = os.path.join(self.package_folder, f"{module_name}.b")
+        if not os.path.exists(boron_file_path): boron_file_path = os.path.join(os.path.dirname(self.filepath), f"{module_name}.b")
         if os.path.isdir(package_path) and os.path.exists(init_path):
             # Import as a package (folder with __init__.py)
             spec = importlib.util.spec_from_file_location(module_name, init_path)
@@ -163,6 +168,10 @@ class Interpreter:
                 if isinstance(attr, type) or callable(attr):  # Classes & functions
                     self.global_scope[attr_name] = attr
     
+    def evaluate_imports(self, node):
+        for module in node.modules:
+            self.evaluate_import(module)
+    
     # variable evaluation, checks type with the function below
     def evaluate_variable_declaration(self, node):
         # get name from node by either getting it from the node directly (non identifiers) or going inside (identifiers)
@@ -191,7 +200,7 @@ class Interpreter:
 
         # finally enforce type
         if reprenabled == True: print(f"Enforcing type for {node.var_type}, {node.name}: {value}")
-        value = self.enforce_type(node.var_type, value)
+        if node.var_type != TokenType.AUTO: value = self.enforce_type(node.var_type, value)
         
         # and add to global scope (this is just for logging purposes)
         if reprenabled == True:
@@ -322,21 +331,20 @@ class Interpreter:
     def evaluate_for_loop(self, node):
         self.evaluate(node.initializer)
         while self.evaluate(node.condition):
-            for statement in node.body:
-                self.evaluate(statement)
+            try:
+                for statement in node.body:
+                    self.evaluate(statement)
+            except BreakException:
+                break
             self.evaluate(node.increment)
-
+            
     def evaluate_while_loop(self, node):
         while True:
-            for statement in node.body:
-                self.evaluate(statement)
-            if not self.evaluate(node.condition):
+            try:
+                for statement in node.body:
+                    self.evaluate(statement)
+            except BreakException:
                 break
-
-    def evaluate_do_while_loop(self, node):
-        while True:
-            for statement in node.body:
-                self.evaluate(statement)
             if not self.evaluate(node.condition):
                 break
 
@@ -474,10 +482,15 @@ class Interpreter:
             self.global_scope[name] = instance
             return instance
 
-        # Otherwise, assume it's a language-defined class.
+        # otherwise, assume it's a language-defined class. get its args
+        args_str = ", ".join(str(arg) for arg in evaluated_args)
+        kwargs_str = ", ".join(f"{key}={value}" for key, value in evaluated_kwargs.items())
+        sep = ", " if args_str and kwargs_str else ""
+
         instance = {
             '__class__': class_literal,
-            'fields': dict(class_literal.env)
+            'fields': dict(class_literal.env),
+            '__str__': f"{typ}({args_str}{sep}{kwargs_str})"
         }
         
         # Call the initializer (__init__) if defined.
@@ -511,8 +524,6 @@ class Interpreter:
 
         self.global_scope[name] = instance
         return instance
-
-
 
     def evaluate_field_assignment(self, node):
         # Check if the parent is a Token; if so, handle it as an identifier.
@@ -555,6 +566,14 @@ class Interpreter:
     def evaluate_method_call(self, node):
         parent_obj = self.evaluate(node.parent)
         method_name = node.name.value if hasattr(node.name, "value") else node.name
+
+        # add native methods for types, this is an example. but i want to make it so:
+        # native methods = {type: method, ...}
+        # do an o(1) lookup based on method name, check if that exists for that type
+        # for right now i just wanna do a length for str
+        if isinstance(parent_obj, str) or isinstance(parent_obj, list):
+            if method_name == "length":
+                return len(parent_obj)
 
         if isinstance(parent_obj, dict) and '__class__' in parent_obj:
             class_obj = parent_obj['__class__']
@@ -607,7 +626,7 @@ class Interpreter:
             elif hasattr(node.parent, "name"):
                 package_name = node.parent.name
             else:
-                raise ValueError("Invalid package identifier in MethodCall.")
+                raise ValueError(f"Invalid package identifier in MethodCall.")
 
             try:
                 package_obj = self.global_scope[package_name]
@@ -626,7 +645,7 @@ class Interpreter:
     def evaluate_index_access(self, node):
         container = self.evaluate(node.container)
         index = self.evaluate(node.index)
-        if not isinstance(container, list) and not isinstance(container, str):
+        if not isinstance(container, list) and not isinstance(container, str) and not isinstance(container, dict):
             raise TypeError("Index access is only supported on lists or arrays.")
         try:
             return container[index]
@@ -637,10 +656,18 @@ class Interpreter:
         container = self.evaluate(node.container)
         index = self.evaluate(node.index)
         value = self.evaluate(node.value)
-        if not isinstance(container, list):
+        if not isinstance(container, list) and not isinstance(container, str) and not isinstance(container, dict):
             raise TypeError("Index access is only supported on lists or arrays.")
         try:
-            container[index] = value
-            return value
+            if isinstance(container, list) or isinstance(container, dict):
+                container[index] = value
+                return value
+            elif isinstance(container, str):
+                container = container[:index] + value + container[index + 1:]
+                self.global_scope[node.container.name] = container
+                return container
         except IndexError:
             raise IndexError("Index out of range.")
+        
+    def evaluate_break(self, node):
+        raise BreakException()

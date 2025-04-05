@@ -17,7 +17,7 @@ class ProgressBar:
     def pack(self, **kwargs):
         self.progress.pack(**kwargs)
 
-    def set(self, value):
+    def set_value(self, value):
         self.progress['value'] = value
 
     def get(self):

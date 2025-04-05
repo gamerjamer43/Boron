@@ -1,19 +1,20 @@
+# importing everything individually because i wanna know if its all used
 # lexer import
 from lexer.lexer import Token, TokenType
 # important nodes
-from parsing.astnodes import Program, Import, EndOfFile
+from parsing.astnodes import Program, Import, Imports, EndOfFile
 # class and function nodes
-from parsing.astnodes import Function, FunctionCall, MethodCall, Parameter, ReturnStatement, FieldAccess, FieldAssignment, ClassInstantiation
+from parsing.astnodes import Function, NativeFunction, FunctionCall, MethodCall, Parameter, ReturnStatement, FieldAccess, FieldAssignment, ClassInstantiation
 # operation nodes
 from parsing.astnodes import BinaryOperation, LogicalOperation, UnaryOperation, IndexAccess, IndexAssignment
 # control flow nodes
-from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop
+from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop, Break
 # variable nodes
-from parsing.astnodes import VariableDeclaration, Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, VectorLiteral, NoneObject
+from parsing.astnodes import VariableDeclaration, Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, VectorLiteral, DictLiteral, NoneObject
 # scope
 from parsing.scope import Scope
 
-#! disable or enable repr
+# disable or enable repr
 global reprenabled 
 reprenabled = False
 
@@ -45,6 +46,11 @@ class Parser:
             raise SyntaxError(f"Expected {token_type}, but found {token.type}. Specific token afflicted: {token}")
         self.next_token()
         return token
+    
+    def peek(self, offset=1):
+        if self.pos + offset < len(self.tokens):
+            return self.tokens[self.pos + offset]
+        return None
 
     # the actual function that parses, recursively feeds tokens thru parse_statement
     def parse(self):
@@ -72,9 +78,11 @@ class Parser:
             TokenType.LIST: self.parse_variable_declaration,
             TokenType.SET: self.parse_variable_declaration,
             TokenType.DEC: self.parse_variable_declaration,
+            TokenType.AUTO: self.parse_variable_declaration,
             TokenType.RANGE: self.parse_range_declaration,
             TokenType.ARRAY: self.parse_array_declaration,
             TokenType.VECTOR: self.parse_vector_declaration,
+            TokenType.DICT: self.parse_dictionary_declaration,
             TokenType.CLASS: self.parse_class_declaration,
             TokenType.GLOBAL: self.parse_global_declaration,
             TokenType.IDENTIFIER: self.parse_identifier,
@@ -84,6 +92,8 @@ class Parser:
             TokenType.WHILE: self.parse_while_loop,
             TokenType.DO: self.parse_do_while_loop,
             TokenType.RETURN: self.parse_return_statement,
+            TokenType.NATIVE: self.parse_native_function,
+            TokenType.BREAK: lambda: Break(),
             TokenType.EOF: lambda: EndOfFile()
         }
 
@@ -218,7 +228,7 @@ class Parser:
         cur = self.current_token()
         name = cur.value
         
-        next_token = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else None
+        next_token = self.peek()
         
         if next_token:
             if next_token.type in {
@@ -249,6 +259,15 @@ class Parser:
                     self.next_token()
                     assignment_value = self.parse_expression()
                     return IndexAssignment(Identifier(name), index_expr, assignment_value)
+                
+                elif self.current_token().type == TokenType.PERIOD:
+                    self.next_token()
+                    property_or_method = self.current_token().value
+                    self.next_token()
+                    if self.current_token().type == TokenType.LEFT_PAREN:
+                        return MethodCall(IndexAccess(Identifier(name), index_expr), property_or_method, [])
+                    else:
+                        raise SyntaxError(f"Expected '(' after method name '{property_or_method}'")
 
                 return IndexAccess(Identifier(name), index_expr)
             
@@ -287,7 +306,7 @@ class Parser:
                     while self.current_token().type != TokenType.RIGHT_PAREN:
                         # If an identifier is followed by an ASSIGN, treat it as a keyword argument.
                         if self.current_token().type == TokenType.IDENTIFIER:
-                            next_token = self.tokens[self.pos+1] if self.pos+1 < len(self.tokens) else None
+                            next_token = self.peek()
                             if next_token and next_token.type == TokenType.ASSIGN:
                                 key = self.current_token().value
                                 self.next_token()  # consume the identifier
@@ -330,7 +349,7 @@ class Parser:
                         self.expect(TokenType.LEFT_PAREN)
                         while self.current_token().type != TokenType.RIGHT_PAREN:
                             if self.current_token().type == TokenType.IDENTIFIER:
-                                next_token = self.tokens[self.pos+1] if self.pos+1 < len(self.tokens) else None
+                                next_token = self.peek()
                                 if next_token and next_token.type == TokenType.ASSIGN:
                                     key = self.current_token().value
                                     self.next_token()  # consume the identifier
@@ -374,7 +393,7 @@ class Parser:
         while self.current_token().type != TokenType.RIGHT_PAREN:
             # Check if the argument is a keyword argument (identifier followed by ASSIGN)
             if self.current_token().type == TokenType.IDENTIFIER:
-                next_token = self.tokens[self.pos+1] if self.pos+1 < len(self.tokens) else None
+                next_token = self.peek()
                 if next_token and next_token.type == TokenType.ASSIGN:
                     key = self.current_token().value  # the keyword name
                     self.next_token()  # consume the identifier
@@ -386,20 +405,80 @@ class Parser:
                     arguments.append(self.parse_expression())
             else:
                 arguments.append(self.parse_expression())
-            # Skip comma if present
+            
             if self.current_token().type == TokenType.COMMA:
                 self.next_token()
+                
         self.expect(TokenType.RIGHT_PAREN)
         return FunctionCall(name, arguments, kwargs)
 
 
     def parse_import(self):
-        import_token = self.expect(TokenType.IMPORT)
-        alias = import_token.value.value
+        import_token = self.expect(TokenType.IMPORT)  # Expect IMPORT keyword
+        imports = []
+
+        if self.current_token().type == TokenType.LEFT_BRACE:
+            self.next_token()  # Consume `{`
+
+            while self.current_token().type != TokenType.RIGHT_BRACE:
+                if self.current_token().type != TokenType.IDENTIFIER:
+                    raise SyntaxError(f"Invalid import statement: Expected an identifier, found {self.current_token()}")
+
+                module_name = self.current_token().value
+                alias = module_name  # Default alias is the same as module
+
+                self.next_token()  # Move to next token
+
+                if self.current_token().type == TokenType.AS:
+                    if self.current_token().value.type != TokenType.IDENTIFIER:
+                        raise SyntaxError(f"Invalid alias: Expected an identifier after 'as', found {self.current_token()}")
+
+                    alias = self.current_token().value.value
+                    self.next_token()  # Move past alias identifier
+
+                imports.append(Import(module_name, alias))  # Store Import object
+
+                if self.current_token().type == TokenType.COMMA:
+                    self.next_token()  # Consume `,` and move to the next identifier
+
+            self.expect(TokenType.RIGHT_BRACE)  # Expect closing `}`
+
+            # Declare all imports
+            for imp in imports:
+                if self.scope.is_imported(imp.module):
+                    raise SyntaxError(f"Variable '{imp.module}' already declared in this scope.")
+                self.scope.declare_import(imp.module, imp.alias)
+
+            if reprenabled:
+                print(repr(Imports(imports)))  # Print list of Import objects
+
+            return Imports(imports)  # Return list of Import nodes
+        
+        elif self.current_token().type == TokenType.PERIOD:
+            self.next_token()
+            if self.current_token().type != TokenType.IDENTIFIER:
+                raise SyntaxError(f"Invalid import statement: Expected an identifier after '.', found {self.current_token()}")
+            
+            class_name = self.current_token().value
+            alias = class_name
+
+            if self.current_token().type == TokenType.AS:
+                if self.current_token().value.type != TokenType.IDENTIFIER:
+                    raise SyntaxError(f"Invalid alias: Expected an identifier after 'as', found {self.current_token()}")
+
+                alias = self.current_token().value.value
+                self.next_token()
+
+            print(repr(Import(class_name, alias, import_token.value.value)))
+            return Import(class_name, alias, import_token.value.value)
+
         if not isinstance(import_token.value, Token) or import_token.value.type != TokenType.IDENTIFIER:
             raise SyntaxError(f"Invalid import statement: Expected an identifier, found {import_token.value}")
 
+        alias = import_token.value.value
         if self.current_token().type == TokenType.AS:
+            if self.current_token().value.type != TokenType.IDENTIFIER:
+                raise SyntaxError(f"Invalid alias: Expected an identifier, found {self.current_token()}")
             alias = self.current_token().value.value
             self.next_token()
 
@@ -408,8 +487,38 @@ class Parser:
             raise SyntaxError(f"Variable '{module}' already declared in this scope.")
 
         self.scope.declare_import(module, alias)
-        if reprenabled == True: print(repr(Import(module, alias)))
+
+        if reprenabled:
+            print(repr(Import(module, alias)))
+
         return Import(module, alias)
+    
+    def parse_dictionary_declaration(self):
+        name = self.expect(TokenType.DICT).value.value
+        if self.scope.is_declared(name):
+            raise SyntaxError(f"Variable '{name}' already declared in this scope.")
+        
+        self.scope.declare_variable(name, TokenType.DICT)
+        self.expect(TokenType.ASSIGN)
+        self.expect(TokenType.LEFT_BRACE)
+        elements = {}
+        
+        while self.current_token().type != TokenType.RIGHT_BRACE:
+            if self.current_token().type == TokenType.EOL:
+                self.next_token()
+            if self.current_token().type in [TokenType.NUMBER, TokenType.STRING]:
+                key = self.parse_expression()
+                self.expect(TokenType.COLON)
+                value = self.parse_expression()
+                elements[key] = value
+
+            if self.current_token().type == TokenType.COMMA:
+                self.next_token()
+
+        self.expect(TokenType.RIGHT_BRACE)
+        if reprenabled == True: print(repr(VariableDeclaration(TokenType.DICT, name, DictLiteral(elements))))
+        return VariableDeclaration(TokenType.DICT, name, DictLiteral(elements))
+
 
     def parse_class_declaration(self):
         # initialize all of this shit at the top
@@ -475,6 +584,7 @@ class Parser:
             raise SyntaxError(f"Function '{name}' already declared in this scope.")
         
         self.scope.declare_variable(name, TokenType.FUNCTION)
+        self.scope.enter_scope()
         self.expect(TokenType.LEFT_PAREN)
         parameters = []
         while self.current_token().type != TokenType.RIGHT_PAREN:
@@ -488,8 +598,8 @@ class Parser:
                 self.next_token()
         self.expect(TokenType.RIGHT_PAREN)
         return_type = self.expect(TokenType.RETURN).value
-
         body = self.parse_block()  # use the block parser
+        self.scope.exit_scope()
         return Function(name, parameters, return_type, body)
     
 
@@ -645,6 +755,14 @@ class Parser:
 
     def parse_for_loop(self):
         self.expect(TokenType.FOR)
+
+        """
+        if self.peek().type == TokenType.IDENTIFIER:
+            if self.scope.is_declared(self.peek().value):
+                pass
+            else:
+                raise SyntaxError(f"Variable '{self.peek().value}' not declared in this scope. Declare the variable to use it as a range.")
+        """
         self.expect(TokenType.LEFT_PAREN)
         self.scope.enter_scope()
 
@@ -712,3 +830,31 @@ class Parser:
         
         if reprenabled == True: print(repr(ReturnStatement(values)))
         return ReturnStatement(values)
+    
+
+    def parse_native_function(self):
+        self.expect(TokenType.NATIVE)
+        name = self.expect(TokenType.IDENTIFIER).value
+
+        if self.scope.is_declared(name):
+            raise SyntaxError(f"Function '{name}' already declared in this scope.")
+        
+        self.scope.declare_variable(name, TokenType.NATIVE)
+        self.expect(TokenType.LEFT_PAREN)
+
+        parameters = []
+        while self.current_token().type != TokenType.RIGHT_PAREN:
+            param_token = self.expect(self.current_token().type)
+            if not isinstance(param_token.value, Token) or param_token.value.type != TokenType.IDENTIFIER:
+                raise SyntaxError(f"Expected parameter with type and identifier, but found {param_token.value}")
+            param_type = param_token.type
+            param_name = param_token.value.value
+            parameters.append(Parameter(param_type, param_name))
+            if self.current_token().type == TokenType.COMMA:
+                self.next_token()
+
+        self.expect(TokenType.RIGHT_PAREN)
+        return_type = self.expect(TokenType.RETURN).value
+        body = self.parse_block()
+        if reprenabled == True: print(repr(NativeFunction(name, parameters, return_type, body)))
+        return NativeFunction(name, parameters, return_type, body)

@@ -13,11 +13,12 @@ range myRange = (1, 9, 1)  #! make it actually work with the for loop
 vec myVec[int] = [2, 3, 4]
 array myArray[int][5] = [1, 2, 3, 4, 5]
 list myList = [1, 2, 3]
+dict myDict = {1: "one", 2: "two", 3: "three"}
+auto myAuto = 42  #! auto type inference, doesn't matter what type is assigned
 
 #! adding soon
-#! dict myDict = {1: "one", 2: "two", 3: "three"}
-#! set c = {1, 2, 3}
-#! tuple c = (1, 2, 3)
+#! set c = {1, 2, 3} sets are a list right now
+#! tuple c = (1, 2, 3) i believe tuples are too
 
 
 #! all operators currently added (i want to say)
@@ -103,10 +104,10 @@ fn myFunction(int arg1, int arg2) -> bool {
         arg2tf = true
     }
 
-    -> arg1tf, arg2tf
+    -> arg1tf and arg2tf
 }
 
-out(myFunction(1, 2)) #! usage, prints true if #s equal, false if not
+out(myFunction(1, 2)) #! usage, prints true both numbers % 2 = 0
 
 
 #! classes

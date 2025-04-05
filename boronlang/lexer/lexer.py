@@ -20,6 +20,7 @@ class TokenType(Enum):
     VECTOR = ("vec", r'\bvec\b')
     SET = ("set", r'\bset\b')
     CLASS = ("class", r'\bclass\b')
+    ENUM = ("enum", r'\benum\b')
     DICT = ("dict", r'\bdict\b')
     NONE = ("none", r'\bnone\b')
     TRUE = ("true", r'\btrue\b')
@@ -42,8 +43,29 @@ class TokenType(Enum):
     AND = ("and", r'\band\b')
     OR = ("or", r'\bor\b')
     AS = ("as", r'\bas\b')
+    BREAK = ("break", r'\bbreak\b')
+
+    # planned keywords/features
+    AUTO = ("auto", r'\bauto\b')
+    PASS = ("pass", r'\bpass\b')
+    NATIVE = ("native", r'\bnative\b')
+    TRY = ("try", r'\btry\b')        # use either try or throw
+    THROW = ("throw", r'\bthrow\b')
+    CATCH = ("catch", r'\bcatch\b')
+    FINALLY = ("finally", r'\bfinally\b')
+    DECORATOR = ("@", r'@')
+    FROM = ("from", r'\bfrom\b')
     
     # operators
+    # bitwise operators (not implemented yet)
+    BAND = ("&", r'&')
+    BOR = ("|", r'\|')
+    XOR = ("^", r'\^')
+    BNOT = ("~", r'~')
+    RIGHT_SHIFT = (">>", r'>>')
+    LEFT_SHIFT = ("<<", r'<<')
+
+    # logical operators
     EQUAL = ("==", r'==')
     NOT_EQUAL = ("!=", r'!=')
     NOT = ("!", r'!')
@@ -51,7 +73,11 @@ class TokenType(Enum):
     LESS_EQUAL = ("<=", r'<=')
     GREATER_THAN = (">", r'>')
     LESS_THAN = ("<", r'<')
+
+    # assignment
     ASSIGN = ("=", r'=')
+
+    # binary operators
     INCREASE = ("+=", r'\+=')
     INCREMENT = ("++", r'\+\+')
     ADD = ("+", r'\+')
@@ -83,6 +109,7 @@ class TokenType(Enum):
     RIGHT_PAREN = (")", r'\)')
     COMMA = (",", r',')
     SEMICOLON = (";", r';')
+    COLON = (":", r':')
     PERIOD = (".", r'\.')
     
     # special tokens (handled separately)
@@ -190,8 +217,8 @@ class Lexer:
                         continue
                 
                 # if static type definition
-                if tok_type in [TokenType.FUNCTION, TokenType.INTEGER, TokenType.DEC, TokenType.BOOLEAN, TokenType.STR, TokenType.IMPORT, TokenType.AS, TokenType.TUPLE, 
-                                TokenType.SET, TokenType.ARRAY, TokenType.LIST, TokenType.VECTOR, TokenType.RANGE, TokenType.CLASS, TokenType.EXTENDS, TokenType.AS]:
+                if tok_type in [TokenType.FUNCTION, TokenType.INTEGER, TokenType.DEC, TokenType.BOOLEAN, TokenType.STR, TokenType.IMPORT, TokenType.AS, TokenType.TUPLE, TokenType.AUTO, 
+                                TokenType.SET, TokenType.ARRAY, TokenType.LIST, TokenType.VECTOR, TokenType.DICT, TokenType.RANGE, TokenType.CLASS, TokenType.EXTENDS, TokenType.AS]:
                     # get token after that
                     line = line[mo.end():].lstrip()
                     mo_identifier = get_token(line)

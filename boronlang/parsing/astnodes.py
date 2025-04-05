@@ -12,15 +12,23 @@ class Program(ASTNode):
 
 # import node
 class Import(ASTNode):
-    def __init__(self, module, alias):
+    def __init__(self, module, alias, frm=None):
         self.module = module
         self.alias = alias
+        self.frm = frm
 
     def __repr__(self):
-        return f'''Import({self.module}, {self.alias})'''
+        return f'''Import({self.module}, {self.alias}, {self.frm})'''
+    
+class Imports(ASTNode):
+    def __init__(self, modules):
+        self.modules = modules
+
+    def __repr__(self):
+        return f'Imports([{', '.join(repr(m) for m in self.modules)}])'
     
 # function/method nodes
-# lines 23-56
+# lines 31-67
 class Function(ASTNode):
     def __init__(self, name, parameters, return_type, body):
         self.name = name
@@ -30,6 +38,16 @@ class Function(ASTNode):
     
     def __repr__(self):
         return f'''Function({self.name}, {self.parameters}, {self.return_type}, {self.body})'''
+
+class NativeFunction(ASTNode):
+    def __init__(self, name, parameters, return_type, body):
+        self.name = name
+        self.parameters = parameters
+        self.return_type = return_type
+        self.body = body
+    
+    def __repr__(self):
+        return f'''NativeFunction({self.name}, {self.parameters}, {self.return_type}, {self.body})'''
 
 class FunctionCall(ASTNode):
     def __init__(self, name, parameters, kwargs=None):
@@ -69,7 +87,7 @@ class VariableDeclaration(ASTNode):
         return f'''VariableDeclaration({self.var_type}, {self.name}, {self.value})'''
 
 # operation nodes
-# lines 70-94
+# lines 80-105
 class BinaryOperation(ASTNode):
     def __init__(self, left, operator, right):
         self.left = left
@@ -215,6 +233,13 @@ class ClassLiteral(ASTNode):
     def __repr__(self):
         return f'ClassLiteral({self.parent}, {self.sub}, {self.fields}, {self.methods}, {self.body}'
 
+class DictLiteral(ASTNode):
+    def __init__(self, elements={}):
+        self.elements = elements
+    
+    def __repr__(self):
+        return f'DictLiteral({self.elements})'
+
 class NoneObject(ASTNode):
     def __init__(self):
         self.value = "None"
@@ -276,12 +301,23 @@ class ReturnStatement(ASTNode):
     def __repr__(self):
         return f'ReturnStatement({self.values})'
     
-# return exception for catching returns (break cases)
+# return exception for catching returns (and break cases)
 class ReturnException(Exception):
     def __init__(self, value):
         self.value = value
 
-# eof
+class BreakException(Exception):
+    def __init__(self, value):
+        self.value = value
+
+# eof and break
+class Break(ASTNode):
+    def __init__(self):
+        self.value = "break"
+    
+    def __repr__(self):
+        return f'Break({self.value})'
+
 class EndOfFile(ASTNode):
     def __init__(self):
         self.value = "EOF"
