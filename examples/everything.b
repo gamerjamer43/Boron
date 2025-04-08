@@ -20,7 +20,6 @@ auto myAuto = 42  #! auto type inference, doesn't matter what type is assigned
 #! set c = {1, 2, 3} sets are a list right now
 #! tuple c = (1, 2, 3) i believe tuples are too
 
-
 #! all operators currently added (i want to say)
 int x = 10
 int y = 20
@@ -88,7 +87,6 @@ do {
     i--
 } while (i > 0)
 out("Broke from case!")
-
 
 #! functions
 #! demo function

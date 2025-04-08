@@ -47,6 +47,7 @@ class Parser:
         self.next_token()
         return token
     
+    # peeks at the offset value index, gets token without consuming it
     def peek(self, offset=1):
         if self.pos + offset < len(self.tokens):
             return self.tokens[self.pos + offset]
@@ -579,7 +580,6 @@ class Parser:
 
     def parse_function(self):
         name = self.expect(TokenType.FUNCTION).value
-
         if self.scope.is_declared(name):
             raise SyntaxError(f"Function '{name}' already declared in this scope.")
         
@@ -594,8 +594,10 @@ class Parser:
             param_type = param_token.type
             param_name = param_token.value.value
             parameters.append(Parameter(param_type, param_name))
+            self.scope.declare_variable(param_name, param_type)
             if self.current_token().type == TokenType.COMMA:
                 self.next_token()
+                
         self.expect(TokenType.RIGHT_PAREN)
         return_type = self.expect(TokenType.RETURN).value
         body = self.parse_block()  # use the block parser

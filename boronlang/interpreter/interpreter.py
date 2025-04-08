@@ -238,6 +238,10 @@ class Interpreter:
             if isinstance(node.left, Identifier) and node.left.name in self.global_scope:
                 self.global_scope[node.left.name] /= right
             return self.global_scope[node.left.name]
+        if node.operator == TokenType.FLOOREQ:
+            if isinstance(node.left, Identifier) and node.left.name in self.global_scope:
+                self.global_scope[node.left.name] /= right
+            return self.global_scope[node.left.name]
         elif node.operator == TokenType.ADD:
             return left + right
         elif node.operator == TokenType.SUBTRACT:
@@ -571,7 +575,11 @@ class Interpreter:
         # native methods = {type: method, ...}
         # do an o(1) lookup based on method name, check if that exists for that type
         # for right now i just wanna do a length for str
-        if isinstance(parent_obj, str) or isinstance(parent_obj, list):
+        if isinstance(parent_obj, list):
+            if method_name == "length":
+                return len(parent_obj)
+        
+        if isinstance(parent_obj, str):
             if method_name == "length":
                 return len(parent_obj)
 

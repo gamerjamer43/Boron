@@ -49,7 +49,7 @@ class TokenType(Enum):
     AUTO = ("auto", r'\bauto\b')
     PASS = ("pass", r'\bpass\b')
     NATIVE = ("native", r'\bnative\b')
-    TRY = ("try", r'\btry\b')        # use either try or throw
+    TRY = ("try", r'\btry\b')
     THROW = ("throw", r'\bthrow\b')
     CATCH = ("catch", r'\bcatch\b')
     FINALLY = ("finally", r'\bfinally\b')
@@ -88,8 +88,8 @@ class TokenType(Enum):
     POWER = ("**", r'\*\*')
     MULTEQ = ("*=", r'\*=')
     MULTIPLY = ("*", r'\*')
-    DIVEQ = ("/=", r'/=')
     FLOOREQ = ("//=", r'//=')
+    DIVEQ = ("/=", r'/=')
     FLOOR_DIVIDE = ("//", r'//')
     DIVIDE = ("/", r'/')
     MODULUS = ("%", r'%')
