@@ -50,7 +50,7 @@ class TokenType(Enum):
     PASS = ("pass", r'\bpass\b')
     NATIVE = ("native", r'\bnative\b')
     TRY = ("try", r'\btry\b')
-    THROW = ("throw", r'\bthrow\b')
+    RAISE = ("raise", r'\braise\b')
     CATCH = ("catch", r'\bcatch\b')
     FINALLY = ("finally", r'\bfinally\b')
     DECORATOR = ("@", r'@')

@@ -63,6 +63,8 @@ class Interpreter:
             MethodCall: self.evaluate_method_call,
             IndexAccess: self.evaluate_index_access,
             IndexAssignment: self.evaluate_index_assignment,
+            TryStatement: self.evaluate_try_statement,
+            # CatchStatement: self.evaluate_catch_statement,
             Break: self.evaluate_break,
             NoneObject: lambda node: None,
             EndOfFile: lambda node: None,
@@ -676,6 +678,18 @@ class Interpreter:
                 return container
         except IndexError:
             raise IndexError("Index out of range.")
+    
+    def evaluate_try_statement(self, node):
+        body = node.body
+
+        try:
+            for statement in body:
+                self.evaluate(statement)
+        except Exception as e:
+            name = type(e).__name__
+            if name in node.catches:
+                for statement in node.catches[name].body:
+                    self.evaluate(statement)
         
     def evaluate_break(self, node):
         raise BreakException()

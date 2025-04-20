@@ -8,7 +8,7 @@ from parsing.astnodes import Function, NativeFunction, FunctionCall, MethodCall,
 # operation nodes
 from parsing.astnodes import BinaryOperation, LogicalOperation, UnaryOperation, IndexAccess, IndexAssignment
 # control flow nodes
-from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop, Break
+from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop, Break, TryStatement, CatchStatement
 # variable nodes
 from parsing.astnodes import VariableDeclaration, Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, VectorLiteral, DictLiteral, NoneObject
 # scope
@@ -52,6 +52,11 @@ class Parser:
         if self.pos + offset < len(self.tokens):
             return self.tokens[self.pos + offset]
         return None
+    
+    # passes all tokens until not eol
+    def skipeols(self):
+        while self.current_token().type == TokenType.EOL:
+            self.next_token()
 
     # the actual function that parses, recursively feeds tokens thru parse_statement
     def parse(self):
@@ -94,6 +99,9 @@ class Parser:
             TokenType.DO: self.parse_do_while_loop,
             TokenType.RETURN: self.parse_return_statement,
             TokenType.NATIVE: self.parse_native_function,
+            TokenType.TRY: self.parse_try_statement,
+            TokenType.RAISE: self.parse_raise_statement,
+            TokenType.CATCH: self.parse_catch_statement,
             TokenType.BREAK: lambda: Break(),
             TokenType.EOF: lambda: EndOfFile()
         }
@@ -106,18 +114,13 @@ class Parser:
     
     # parses blocks correctly, will in fact be using
     def parse_block(self):
-        while self.current_token().type == TokenType.EOL:
-            self.next_token()
-
+        self.skipeols()
         self.expect(TokenType.LEFT_BRACE)
         statements = []
-
-        while self.current_token().type == TokenType.EOL:
-            self.next_token()
+        self.skipeols()
 
         while self.current_token().type != TokenType.RIGHT_BRACE:
-            while self.current_token().type == TokenType.EOL:
-                self.next_token()
+            self.skipeols()
             if self.current_token().type == TokenType.RIGHT_BRACE:
                 break
             statements.append(self.parse_statement())
@@ -340,36 +343,38 @@ class Parser:
                 name = self.expect(TokenType.IDENTIFIER)
                 self.expect(TokenType.ASSIGN)
 
-                # Check if the instantiation uses the 'new' keyword.
+                # check if the instantiation uses the 'new' keyword.
                 if self.current_token().type == TokenType.NEW:
-                    self.next_token()  # consume NEW
+                    self.expect(TokenType.NEW)
                     self.expect(TokenType.IDENTIFIER)  # expect the class identifier after NEW
-                    arguments = []
-                    kwargs = {}
+                    
                     if self.current_token().type == TokenType.LEFT_PAREN:
+                        arguments = []
+                        kwargs = {}
                         self.expect(TokenType.LEFT_PAREN)
+
                         while self.current_token().type != TokenType.RIGHT_PAREN:
                             if self.current_token().type == TokenType.IDENTIFIER:
                                 next_token = self.peek()
                                 if next_token and next_token.type == TokenType.ASSIGN:
                                     key = self.current_token().value
-                                    self.next_token()  # consume the identifier
-                                    self.expect(TokenType.ASSIGN)  # consume '='
+                                    self.next_token()
+                                    self.expect(TokenType.ASSIGN)
                                     value = self.parse_expression()
                                     kwargs[key] = value
                                 else:
                                     arguments.append(self.parse_expression())
                             else:
                                 arguments.append(self.parse_expression())
+
                             if self.current_token().type == TokenType.COMMA:
                                 self.next_token()
+                                
                         self.expect(TokenType.RIGHT_PAREN)
                     return ClassInstantiation(typ, name, arguments, kwargs)
                 else:
-                    # Instead of using new, parse the expression normally (e.g., pattern.findall(...))
+                    # instead of using new, parse the expression normally (e.g., pattern.findall(...))
                     expr = self.parse_expression()
-                    # Here we wrap the parsed expression in a ClassInstantiation node.
-                    # You might adjust the arguments structure if needed.
                     return ClassInstantiation(typ, name, [expr], {})
 
             elif next_token.type == TokenType.LEFT_PAREN:
@@ -545,9 +550,7 @@ class Parser:
         
         # process class body until we hit RIGHT_BRACE.
         while self.current_token().type != TokenType.RIGHT_BRACE:
-            while self.current_token().type == TokenType.EOL:
-                self.next_token()
-
+            self.skipeols()
             if self.current_token().type == TokenType.RIGHT_BRACE:
                 break
 
@@ -722,9 +725,7 @@ class Parser:
 
         else_body = None
         last_else_if = None
-
-        while self.current_token().type == TokenType.EOL:
-            self.next_token()
+        self.skipeols()
 
         while self.current_token().type == TokenType.ELSE_IF:
             self.next_token()
@@ -736,15 +737,12 @@ class Parser:
             else:
                 else_body = else_if_statement
             last_else_if = else_if_statement
-            while self.current_token().type == TokenType.EOL:
-                self.next_token()
+            self.skipeols()
         
-        while self.current_token().type == TokenType.EOL:
-            self.next_token()
+        self.skipeols()
 
         if self.current_token().type == TokenType.ELSE:
-            while self.current_token().type == TokenType.EOL:
-                self.next_token()
+            self.skipeols()
             self.next_token()
             final_else_body = self.parse_block()
             if last_else_if:
@@ -860,3 +858,29 @@ class Parser:
         body = self.parse_block()
         if reprenabled == True: print(repr(NativeFunction(name, parameters, return_type, body)))
         return NativeFunction(name, parameters, return_type, body)
+    
+    def parse_try_statement(self):
+        self.expect(TokenType.TRY)
+        try_body = self.parse_block()  # Parse the try block
+
+        self.skipeols()
+
+        catch_map = {}
+        while self.current_token().type == TokenType.CATCH:
+            self.expect(TokenType.CATCH)
+            catch_condition = self.parse_expression()
+            catch_body = self.parse_block()
+            name = catch_condition.name     # or however you extract the string
+            catch_map[name] = CatchStatement(catch_condition, catch_body)
+            self.skipeols()
+
+        if reprenabled == True: print(repr(TryStatement(try_body, catch_map)))
+        return TryStatement(try_body, catch_map)
+        
+
+    def parse_raise_statement(self):
+        self.expect(TokenType.RAISE)
+        # return idk
+
+    def parse_catch_statement(self):
+        pass

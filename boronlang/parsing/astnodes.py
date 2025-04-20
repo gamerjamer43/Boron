@@ -300,6 +300,23 @@ class ReturnStatement(ASTNode):
     
     def __repr__(self):
         return f'ReturnStatement({self.values})'
+
+# try catch etc nowhere to put it
+class TryStatement(ASTNode):
+    def __init__(self, body, catches):
+        self.body = body
+        self.catches = catches
+
+    def __repr__(self):
+        return f'TryStatement({self.body}, {self.catches})'
+
+class CatchStatement(ASTNode):
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+    def __repr__(self):
+        return f'CatchStatement({self.condition}, {self.body})'
     
 # return exception for catching returns (and break cases)
 class ReturnException(Exception):
