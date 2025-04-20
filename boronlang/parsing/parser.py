@@ -8,7 +8,7 @@ from parsing.astnodes import Function, NativeFunction, FunctionCall, MethodCall,
 # operation nodes
 from parsing.astnodes import BinaryOperation, LogicalOperation, UnaryOperation, IndexAccess, IndexAssignment
 # control flow nodes
-from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop, Break, TryStatement, CatchStatement
+from parsing.astnodes import IfStatement, ForLoop, WhileLoop, DoWhileLoop, Break, TryStatement, CatchStatement, RaiseStatement
 # variable nodes
 from parsing.astnodes import VariableDeclaration, Identifier, StringLiteral, BooleanLiteral, IntLiteral, DecLiteral, ListLiteral, ArrayLiteral, RangeLiteral, ClassLiteral, VectorLiteral, DictLiteral, NoneObject
 # scope
@@ -880,7 +880,13 @@ class Parser:
 
     def parse_raise_statement(self):
         self.expect(TokenType.RAISE)
-        # return idk
+        tok = self.expect(TokenType.IDENTIFIER).value
+        message = None
+        if self.peek().type == TokenType.LEFT_PAREN:
+            self.expect(TokenType.LEFT_PAREN)
+            message = self.parse_expression()
+            self.expect(TokenType.RIGHT_PAREN)
+        return RaiseStatement(tok, message)
 
     def parse_catch_statement(self):
         pass

@@ -11,6 +11,7 @@ from rich import print  # colored prints
 
 # builtin functions
 from interpreter.builtins import BUILTINS
+import builtins
 
 #! disable or enable repr
 global reprenabled 
@@ -64,6 +65,7 @@ class Interpreter:
             IndexAccess: self.evaluate_index_access,
             IndexAssignment: self.evaluate_index_assignment,
             TryStatement: self.evaluate_try_statement,
+            RaiseStatement: self.evaluate_raise_statement,
             # CatchStatement: self.evaluate_catch_statement,
             Break: self.evaluate_break,
             NoneObject: lambda node: None,
@@ -690,6 +692,28 @@ class Interpreter:
             if name in node.catches:
                 for statement in node.catches[name].body:
                     self.evaluate(statement)
+            else:
+                raise NameError(f"Exception {name} not checked for.")
+    
+    def evaluate_raise_statement(self, node):
+        if isinstance(node.error, str):
+            exception = getattr(builtins, node.error, None)
+            if not (isinstance(exception, type) and issubclass(exception, BaseException)):
+                raise NameError(f"Exception {exception} not a defined Exception. Please create it to use it.")
+        elif isinstance(node.error, type) and issubclass(node.error, BaseException):
+            exception = node.error
+        else:
+            raise TypeError(f"Invalid exception specifier: {node.error!r}")
+
+        if node.message is not None:
+            msg_val = str(node.message)
+        else:
+            msg_val = None
+
+        if msg_val is not None:
+            raise exception(msg_val)
+        else:
+            raise exception()
         
     def evaluate_break(self, node):
         raise BreakException()

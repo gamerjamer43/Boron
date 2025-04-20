@@ -318,6 +318,14 @@ class CatchStatement(ASTNode):
     def __repr__(self):
         return f'CatchStatement({self.condition}, {self.body})'
     
+class RaiseStatement(ASTNode):
+    def __init__(self, error, message):
+        self.error = error
+        self.message = message
+    
+    def __repr__(self):
+        return f'RaiseStatement({self.error}, {self.message})'
+    
 # return exception for catching returns (and break cases)
 class ReturnException(Exception):
     def __init__(self, value):
