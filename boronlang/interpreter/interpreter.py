@@ -607,7 +607,7 @@ class Interpreter:
             local_scope = {}
             local_scope[method_node.parameters[0].name] = parent_obj
             param_names = [param.name for param in method_node.parameters]
-            # Bind positional and keyword arguments (skip the first parameter which is self).
+
             for i, param in enumerate(method_node.parameters[1:]):
                 if i < len(evaluated_args):
                     local_scope[param.name] = evaluated_args[i]
@@ -693,7 +693,7 @@ class Interpreter:
                 for statement in node.catches[name].body:
                     self.evaluate(statement)
             else:
-                raise NameError(f"Exception {name} not checked for.")
+                raise e
     
     def evaluate_raise_statement(self, node):
         if isinstance(node.error, str):

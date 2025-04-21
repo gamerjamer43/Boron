@@ -882,9 +882,9 @@ class Parser:
         self.expect(TokenType.RAISE)
         tok = self.expect(TokenType.IDENTIFIER).value
         message = None
-        if self.peek().type == TokenType.LEFT_PAREN:
+        if self.current_token().type == TokenType.LEFT_PAREN:
             self.expect(TokenType.LEFT_PAREN)
-            message = self.parse_expression()
+            message = self.parse_expression().value
             self.expect(TokenType.RIGHT_PAREN)
         return RaiseStatement(tok, message)
 
