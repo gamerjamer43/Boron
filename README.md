@@ -125,7 +125,7 @@ str myStr = "Hello, World!"
   Create a range for use in loops:
 
   ```
-  range myRange = (1, 9, 1)  #! Defines a range from 1 to 8
+  range myRange = (0, 9, 1)  #! Defines a range from 0 to 9 with a step of 1
   ```
 
 ---
@@ -179,9 +179,13 @@ Boron supports standard arithmetic, comparison, logical, and compound assignment
 ```
 if myInt == 42 {
     out("Answer found!")
-} else if myInt > 42 {
+} 
+
+else if myInt > 42 {
     out("Too high!")
-} else {
+} 
+
+else {
     out("Too low!")
 }
 ```
@@ -287,11 +291,17 @@ Math.sin(0.5)
 fn fizzbuzz(int numinput) -> str {
     if numinput % 5 == 0 and numinput % 3 == 0 {
         -> "FizzBuzz"
-    } else if numinput % 3 == 0 {
+    } 
+    
+    else if numinput % 3 == 0 {
         -> "Fizz"
-    } else if numinput % 5 == 0 {
+    } 
+    
+    else if numinput % 5 == 0 {
         -> "Buzz"
-    } else {
+    } 
+    
+    else {
         -> numinput
     }
 }
@@ -322,9 +332,13 @@ fn quicksort(list arr) -> list {
         int value = arr[i]
         if value < pivot {
             left += [value]
-        } else if value > pivot {
+        } 
+        
+        else if value > pivot {
             right += [value]
-        } else {
+        } 
+        
+        else {
             equal += [value]
         }
     }
@@ -367,9 +381,23 @@ out("Go to the store, buy some more, 99 more bottles of beer on the wall!")
 
 ## Future Enhancements
 
-- **Additional Data Types:** Support dictionaries, tuples and sets is planned.
-- **Enhanced Scoping:** Better support for closures and nested functions.
-- **Improved Error Handling:** More descriptive syntax and type error messages.
+- **Additional Data Types:** Planning to add full support for tuples and sets, enum, and hashed data structures. Uncertain on what the entire scope is but there is a lot to come.
+- **Improved Error Handling:** Stack tracing is fully python based. I would like to eventually make it based in my language, so you can check what line your code is precisely on instead of printing some AST out and trying to find it that way.
+- **Decorators:** In python, there is the ability to wrap functions in a decorator by creating a super function and calling the lesser function inside of it, expanding it's functionality. I really like this feature and plan to add it soon.
+- **Generics:** And no, not the python way. I hope to add these in a way that resembles the syntax of java. i.e:
+```
+class Box<T> {
+  vec items[T]
+
+  def __init__(class self, vec items[T]) {
+      self.items = items
+  }
+}
+```
+- **Typecasting:** As of right now, to typecast you just get a string representation by running the toType() function, Type being the type you want to change to. i.e. toString(1). i would eventually like to have syntax for this that looks like
+```
+(type) value
+```
 - **Other shit:** I have no clue what else to add here. A lot more to come.
 
 If you need more info, refer to **"everything.b"** in the examples folder, and view the other examples.
