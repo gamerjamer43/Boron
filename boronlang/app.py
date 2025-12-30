@@ -1,6 +1,6 @@
 from assembler import assemble
 import argparse, time
-timer = False
+timer = True
 
 def main() -> None:
     # parse args

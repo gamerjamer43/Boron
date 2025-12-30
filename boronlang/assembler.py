@@ -30,6 +30,6 @@ def assemble(filename, args) -> None:
         # interpreter
         Interpreter(filename, args).evaluate(ast)
 
-    except FileNotFoundError: 
+    except FileNotFoundError:
         print("Error: File not found")
         _exit(0)

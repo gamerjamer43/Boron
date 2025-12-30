@@ -14,7 +14,7 @@ from interpreter.builtins import BUILTINS
 import builtins
 
 #! disable or enable repr
-global reprenabled 
+global reprenabled
 reprenabled = False
 
 class Interpreter:
@@ -118,7 +118,7 @@ class Interpreter:
             raise ValueError("Expected string, got {} with value {}.".format(type(value), value))
 
         return value
-    
+
     def create_callback(self, func_node):
         def callback():
             func_name = func_node.name.value if hasattr(func_node.name, "value") else func_node.name
@@ -171,11 +171,11 @@ class Interpreter:
                 attr = getattr(module, attr_name)
                 if isinstance(attr, type) or callable(attr):  # Classes & functions
                     self.global_scope[attr_name] = attr
-    
+
     def evaluate_imports(self, node):
         for module in node.modules:
             self.evaluate_import(module)
-    
+
     # variable evaluation, checks type with the function below
     def evaluate_variable_declaration(self, node):
         # get name from node by either getting it from the node directly (non identifiers) or going inside (identifiers)
@@ -205,7 +205,7 @@ class Interpreter:
         # finally enforce type
         if reprenabled == True: print(f"Enforcing type for {node.var_type}, {node.name}: {value}")
         if node.var_type != TokenType.AUTO: value = self.enforce_type(node.var_type, value)
-        
+
         # and add to global scope (this is just for logging purposes)
         if reprenabled == True:
             if var_name in self.global_scope:
@@ -289,7 +289,7 @@ class Interpreter:
         if node.operator == TokenType.NOT:
             if isinstance(node.operand, Identifier):
                 identifier_name = node.operand.name
-                
+
                 if identifier_name in self.global_scope:
                     value = self.global_scope[identifier_name]
                     if isinstance(value, bool):
@@ -303,7 +303,7 @@ class Interpreter:
                     raise ValueError(f"'{identifier_name}' is not defined.")
             else:
                 return not operand
-        
+
         # else for increments and decrements
         elif node.operator == TokenType.INCREMENT:
             if isinstance(node.operand, Identifier):
@@ -345,7 +345,7 @@ class Interpreter:
             except BreakException:
                 break
             self.evaluate(node.increment)
-            
+
     def evaluate_while_loop(self, node):
         while True:
             try:
@@ -364,7 +364,7 @@ class Interpreter:
         func_name = node.name
         if func_name not in self.global_scope:
             raise NameError(f"Function '{func_name}' is not defined.")
-        
+
         function = self.global_scope[func_name]
         evaluated_args = [self.evaluate(arg) for arg in node.parameters]
         evaluated_kwargs = {key: self.evaluate(value) for key, value in node.kwargs.items()} if hasattr(node, 'kwargs') else {}
@@ -381,7 +381,7 @@ class Interpreter:
         # If it's a native Python function, call it with both args and kwargs.
         if not hasattr(function, "parameters"):
             return function(*evaluated_args, **evaluated_kwargs)
-        
+
         # Otherwise, assume it's a user-defined function.
         local_scope = {}
         param_names = [param.name for param in function.parameters]
@@ -397,17 +397,57 @@ class Interpreter:
         for key in evaluated_kwargs:
             if key not in param_names:
                 raise TypeError(f"Unexpected keyword argument '{key}'")
-        
+
         previous_scope = self.global_scope.copy()
         combined_scope = {**self.global_scope, **local_scope}
         self.global_scope = combined_scope
 
         result = None
-        try:
-            for statement in function.body:
-                self.evaluate(statement)
-        except ReturnException as ret:
-            result = ret.value
+
+        while True:
+            tail_restarted = False
+            try:
+                # run thru each statement in the body
+                for idx, statement in enumerate(function.body):
+                    # tail call conditions: last statement == ReturnStatement, returns FunctionCall to the SAME FUNCTION
+                    if (isinstance(statement, ReturnStatement) and idx == len(function.body) - 1):
+                        val_node = statement.values[0] if statement.values else None
+
+                        if isinstance(val_node, FunctionCall):
+                            # normalize names
+                            called_name = val_node.name if isinstance(val_node.name, str) else getattr(val_node.name, "value", None)
+                            func_def_name = function.name.value if hasattr(function.name, "value") else function.name
+
+                            # make sure the tail call is true self recursion
+                            if called_name == func_def_name:
+                                # evaluate the new args/kwargs (no call yet)
+                                new_args = [self.evaluate(a) for a in val_node.parameters]
+                                new_kwargs = {k: self.evaluate(v) for k, v in val_node.kwargs.items()} if hasattr(val_node, "kwargs") else {}
+
+                                # rebind parameters to global scope (a must for tail call)
+                                for i, param in enumerate(function.parameters):
+                                    if i < len(new_args): self.global_scope[param.name] = new_args[i]
+                                    elif param.name in new_kwargs: self.global_scope[param.name] = new_kwargs[param.name]
+                                    else: raise TypeError(f"Missing argument for parameter '{param.name}'")
+
+                                # restart function body with new param bindings
+                                tail_restarted = True
+                                break
+
+                    # otherwise just deal with it normally
+                    self.evaluate(statement)
+
+                # where the restart happens
+                if tail_restarted:
+                    continue
+
+                # no tail call == stop
+                break
+
+            # handle returns
+            except ReturnException as ret:
+                result = ret.value
+                break
 
         self.global_scope = previous_scope
         return result
@@ -428,18 +468,18 @@ class Interpreter:
         # check if larger than size
         if len(elements) > int(node.size):
             raise ValueError(f"Array size mismatch: expected {node.size}, got {len(elements)}")
-        
+
         # afterwards, enforce type
         if reprenabled == True: print(f"Enforcing type for array: {elements}")
         for element in elements:
             self.enforce_type(node.type, element)
 
         return elements
-    
+
     def evaluate_vector_literal(self, node):
         # evaluate each element in the node
         elements = [self.evaluate(element) for element in node.elements]
-        
+
         # enforce type, dwb size
         if reprenabled == True: print(f"Enforcing type for array: {elements}")
         for element in elements:
@@ -470,7 +510,7 @@ class Interpreter:
         name = node.name.value
         if typ not in self.global_scope:
             raise NameError(f"Class '{typ}' not defined.")
-        
+
         class_literal = self.global_scope[typ]
         evaluated_args = [self.evaluate(arg) for arg in node.arguments]
         evaluated_kwargs = {key: self.evaluate(value) for key, value in node.kwargs.items()} if hasattr(node, 'kwargs') else {}
@@ -479,12 +519,12 @@ class Interpreter:
             self.create_callback(arg) if hasattr(arg, "parameters") and hasattr(arg, "body") else arg
             for arg in evaluated_args
         ]
-                
+
         for key, value in evaluated_kwargs.items():
             if key == "command" and hasattr(value, "parameters") and hasattr(value, "body"):
                 evaluated_kwargs[key] = self.create_callback(value)
 
-        # For native Python classes, instantiate with both args and kwargs.
+        # for native Python classes, instantiate with both args and kwargs
         if isinstance(class_literal, type):
             instance = class_literal(*evaluated_args, **evaluated_kwargs)
             self.global_scope[name] = instance
@@ -500,8 +540,8 @@ class Interpreter:
             'fields': dict(class_literal.env),
             '__str__': f"{typ}({args_str}{sep}{kwargs_str})"
         }
-        
-        # Call the initializer (__init__) if defined.
+
+        # call __init__ (initializer) if defined
         if '__init__' in class_literal.env:
             init_method = class_literal.env['__init__']
             local_scope = {}
@@ -519,10 +559,10 @@ class Interpreter:
             for key in evaluated_kwargs:
                 if key not in param_names:
                     raise TypeError(f"Unexpected keyword argument '{key}' in __init__")
-            
+
             previous_scope = self.global_scope.copy()
             self.global_scope.update(local_scope)
-            
+
             try:
                 for stmt in init_method.body:
                     self.evaluate(stmt)
@@ -534,7 +574,7 @@ class Interpreter:
         return instance
 
     def evaluate_field_assignment(self, node):
-        # Check if the parent is a Token; if so, handle it as an identifier.
+        # check if the parent is a token; if so, handle it as an identifier
         if isinstance(node.parent, Token):
             key = node.parent.value
             if key not in self.global_scope:
@@ -542,16 +582,16 @@ class Interpreter:
             instance = self.global_scope[key]
         else:
             instance = self.evaluate(node.parent)
-        
+
         new_value = self.evaluate(node.value)
-        
-        # Extract the field name from the assignment.
+
+        # extract the field name from the assignment
         field_name = node.field.value if hasattr(node.field, "value") else node.field
-        
-        # Ensure the instance is a valid object (in our design, a dict with a 'fields' key).
+
+        # ensure the instance is a valid object (dict with a 'fields' key).
         if not (isinstance(instance, dict) and "fields" in instance):
             raise TypeError("Field assignment target is not a valid instance.")
-        
+
         instance["fields"][field_name] = new_value
         return new_value
 
@@ -561,16 +601,16 @@ class Interpreter:
         # Ensure the instance is a valid object (in our design, a dict with a 'fields' key).
         if not (isinstance(instance, dict) and 'fields' in instance):
             raise TypeError("Field access target is not a valid instance.")
-        
+
         # Determine the field name.
         if hasattr(node.field, 'name'):
             field_name = node.field.name  # For Identifier nodes.
         else:
             field_name = node.field  # For tokens.
-        
+
         # Return the field's value, or None if not found.
         return instance['fields'].get(field_name, None)
-    
+
     def evaluate_method_call(self, node):
         parent_obj = self.evaluate(node.parent)
         method_name = node.name.value if hasattr(node.name, "value") else node.name
@@ -582,7 +622,7 @@ class Interpreter:
         if isinstance(parent_obj, list):
             if method_name == "length":
                 return len(parent_obj)
-        
+
         if isinstance(parent_obj, str):
             if method_name == "length":
                 return len(parent_obj)
@@ -618,10 +658,10 @@ class Interpreter:
             for key in evaluated_kwargs:
                 if key not in param_names:
                     raise TypeError(f"Unexpected keyword argument '{key}' in method '{method_name}'")
-            
+
             previous_scope = self.global_scope.copy()
             self.global_scope.update(local_scope)
-            
+
             result = None
             try:
                 for stmt in method_node.body:
@@ -631,7 +671,7 @@ class Interpreter:
 
             self.global_scope = previous_scope
             return result
-        
+
         else:
             if hasattr(node.parent, "value"):
                 package_name = node.parent.value
@@ -648,12 +688,12 @@ class Interpreter:
             method_func = getattr(package_obj, method_name, None)
             if method_func is None:
                 raise AttributeError(f"Package '{package_name}' does not have a method '{method_name}'.")
-            
+
             args = [self.evaluate(arg) for arg in node.parameters]
             kwargs = {key: self.evaluate(value) for key, value in node.kwargs.items()} if hasattr(node, 'kwargs') else {}
             return method_func(*args, **kwargs)
 
-    
+
     def evaluate_index_access(self, node):
         container = self.evaluate(node.container)
         index = self.evaluate(node.index)
@@ -680,7 +720,7 @@ class Interpreter:
                 return container
         except IndexError:
             raise IndexError("Index out of range.")
-    
+
     def evaluate_try_statement(self, node):
         body = node.body
 
@@ -694,7 +734,7 @@ class Interpreter:
                     self.evaluate(statement)
             else:
                 raise e
-    
+
     def evaluate_raise_statement(self, node):
         if isinstance(node.error, str):
             exception = getattr(builtins, node.error, None)
@@ -714,6 +754,6 @@ class Interpreter:
             raise exception(msg_val)
         else:
             raise exception()
-        
+
     def evaluate_break(self, node):
         raise BreakException()
