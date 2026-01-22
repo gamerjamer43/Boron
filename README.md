@@ -1,3 +1,8 @@
+## This repo is no longer actively being maintained.
+I am currently working on other projects that I am more impressed with, I might unarchive this later for opts but this is a python interpreted language. Nothing is gonna be very fast.
+
+---
+
 # Boron
 
 Boron is a statically typed, precision-first programming language designed for expressive control flow, rich data types, and seamless package integration. This README details every aspect of the language—from basic syntax to advanced features—so you can quickly get started writing robust programs.
